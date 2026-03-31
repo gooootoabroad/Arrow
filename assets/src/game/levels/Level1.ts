@@ -1,0 +1,67 @@
+import { LevelMapConfig } from '../config/LevelConfig';
+import { ArrowDirection, EArrowColor } from '../type/arrow';
+
+export const Level1: LevelMapConfig = {
+    levelId: 1,
+    levelName: 'Level 1',
+    mapWidth: 750,
+    mapHeight: 1334,
+    path: {
+        pathPoints: [
+            [-4, -4],
+            [-4, -3],
+            [-4, -2],
+            [-4, -1],
+            [-4, 0],
+            [-4, 1],
+            [-4, 2],
+            [-4, 3],
+            [-4, 4],
+            [-3, 4],
+            [-2, 4],
+            [-1, 4],
+            [0, 4],
+            [1, 4],
+            [2, 4],
+            [3, 4],
+            [4, 4],
+            [4, 3],
+            [4, 2],
+            [4, 1],
+            [4, 0],
+            [4, -1],
+            [4, -2],
+            [4, -3],
+            [4, -4],
+            [3, -4],
+            [2, -4],
+            [1, -4],
+            [0, -4],
+            [-1, -4],
+            [-2, -4],
+            [-3, -4],
+        ],
+        pathWidth: 40,
+    },
+    arrows: [
+        {
+            id: 1,
+            startPos: [0, 0],
+            offsetCoords: [
+                [1, 0],
+                [2, 0],
+                [2, 1],
+                [2, 2],
+            ],
+            direction: ArrowDirection.LEFT,
+            colorType: EArrowColor.RED,
+        },
+    ],
+    holes: [
+        {
+            id: 1,
+            position: [0, 280],
+            expectColorType: EArrowColor.RED,
+        },
+    ],
+};

@@ -78,7 +78,7 @@ export class startScene extends Component {
 
         // await LoadMgr.loadDir(Bundle.game, 'prefab', Prefab);
         this._updateProgress(0.9);
-        await LoadMgr.loadScene(SceneName.Main);
+        await LoadMgr.loadScene(SceneName.Game);
     }
 
     private async loadRes() {
@@ -140,7 +140,7 @@ export class startScene extends Component {
     }
 
     private _nextScene() {
-        RunScene.show(SceneName.Main, true);
+        RunScene.show(SceneName.Game, true);
     }
 }
 
