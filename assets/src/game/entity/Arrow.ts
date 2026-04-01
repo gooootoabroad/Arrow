@@ -4,6 +4,8 @@ import { ArrowDirection, ArrowState, EArrowColor } from '../type/arrow';
 import { GameConfig } from '../../global/GameConfig';
 import { ArrowSpawnConfig } from '../config/LevelConfig';
 import { GameRuntime } from '../runtime/gameRuntime';
+import { HoleGroup } from './HoleGroup';
+import { Hole } from './Hole';
 let { ccclass, property } = _decorator;
 
 @ccclass('Arrow')
@@ -19,6 +21,12 @@ export class Arrow extends Component {
     private _points: Vec2[] = [];
     private _originalPoints: Vec2[] = [];
     private _currentPathIndex: number = -1;
+    private _targetHolePos: Vec2 = null;
+    private _onDestroyed: () => void = null;
+
+    public setOnDestroyed(callback: () => void) {
+        this._onDestroyed = callback;
+    }
 
     get displayColor(): Color {
         return new Color().fromHEX(this.colorType);
@@ -38,12 +46,10 @@ export class Arrow extends Component {
         this.direction = config.direction;
         this._state = ArrowState.IDLE;
         this._points = [];
-        let startPos = new Vec2(config.startPos[0], config.startPos[1]);
+        let startPos = new Vec2(config.startPos[0] * GameConfig.UNIT_SIZE, config.startPos[1] * GameConfig.UNIT_SIZE);
         this._points.push(startPos.clone());
         for (let offset of config.offsetCoords) {
-            let bodyPos = new Vec2();
-            Vec2.add(bodyPos, startPos, new Vec2(offset[0] * GameConfig.UNIT_SIZE, offset[1] * GameConfig.UNIT_SIZE));
-            this._points.push(bodyPos);
+            this._points.push(new Vec2(offset[0] * GameConfig.UNIT_SIZE, offset[1] * GameConfig.UNIT_SIZE));
         }
 
         this._originalPoints = this._points.map(p => p.clone());
@@ -134,6 +140,12 @@ export class Arrow extends Component {
         let threshold = GameConfig.UNIT_SIZE * 0.6;
 
         let moveStep = () => {
+            if (this._state === ArrowState.ENTERING_HOLE) {
+                this._moveIntoHole();
+                this.draw();
+                return;
+            }
+
             if (this._state !== ArrowState.MOVING) {
                 this.unschedule(moveStep);
                 return;
@@ -221,6 +233,73 @@ export class Arrow extends Component {
         if (distToNext < stepDist) {
             this._currentPathIndex = nextIndex;
             this._points[0] = GameRuntime.levelPathPoints[nextIndex].clone();
+        }
+
+        this._checkHoleEnter();
+    }
+
+    private _checkHoleEnter() {
+        if (GameRuntime.holeGroups.length === 0) return;
+
+        let headPos = this._points[0];
+        let enterThreshold = GameConfig.UNIT_SIZE * 1.5;
+
+        for (let group of GameRuntime.holeGroups) {
+            const hole = group.checkHoleMatch(headPos, enterThreshold);
+            if (hole && hole.checkMatch(this.colorType)) {
+                this._enterHole(hole, group);
+                return;
+            }
+        }
+    }
+
+    private _enterHole(hole: Hole, group: HoleGroup) {
+        hole.occupied = true;
+        this._state = ArrowState.ENTERING_HOLE;
+        this._targetHolePos = new Vec2(hole.node.position.x, hole.node.position.y);
+        this._activeGroup = group;
+    }
+
+    private _activeGroup: HoleGroup = null;
+
+    private _moveIntoHole() {
+        if (this._points.length <= 1) {
+            this._state = ArrowState.FINISHED;
+            this.unscheduleAllCallbacks();
+
+            if (this._activeGroup) {
+                this._activeGroup.onHoleEnter();
+            }
+
+            if (this._onDestroyed) {
+                this._onDestroyed();
+            }
+
+            this.node.destroy();
+            return;
+        }
+
+        let oldPoints = this._points.map(p => p.clone());
+        let newPoints: Vec2[] = [];
+
+        let headDir = new Vec2();
+        Vec2.subtract(headDir, this._targetHolePos, oldPoints[0]);
+        let distToHole = headDir.length();
+        headDir.normalize();
+
+        let stepDist = GameConfig.UNIT_SIZE;
+        let headNewPos = new Vec2();
+        Vec2.add(headNewPos, oldPoints[0], headDir.clone().multiplyScalar(stepDist));
+        newPoints.push(headNewPos);
+
+        for (let i = 1; i < oldPoints.length; i++) {
+            newPoints.push(oldPoints[i - 1].clone());
+        }
+
+        this._points = newPoints;
+
+        if (distToHole < stepDist) {
+            this._points.shift();
         }
     }
 

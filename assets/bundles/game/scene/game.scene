@@ -335,7 +335,7 @@
       "__id__": 2
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 9
@@ -577,7 +577,9 @@
     "arrowRoot": {
       "__id__": 10
     },
-    "holeRoot": null,
+    "holeRoot": {
+      "__id__": 8
+    },
     "arrowPrefab": {
       "__uuid__": "f47aaf3b-d835-4358-8aa8-bb0b21d1fb00",
       "__expectedType__": "cc.Prefab"

@@ -2,6 +2,7 @@ import { _decorator, Color, Component, Node, Vec3, Graphics, Vec2, Sprite, Prefa
 import { LevelMapConfig, ArrowSpawnConfig } from '../config/LevelConfig';
 import { Level1 } from '../levels/Level1';
 import { Arrow } from '../entity/Arrow';
+import { HoleGroup } from '../entity/HoleGroup';
 import { GameConfig } from '../../global/GameConfig';
 import { LoadMgr } from '../../manager/LoadMgr';
 import { Bundle } from '../../global/bundle';
@@ -41,10 +42,12 @@ export class GameController extends Component {
         this.initRuntime();
         this._initMap();
         this._initPath();
+        this._initHolesFromConfig();
         this._initArrowsFromConfig();
     }
 
     private initRuntime() {
+        GameRuntime.holeGroups = [];
         GameRuntime.initLevelPathPoints(this._levelConfig.path.pathPoints);
     }
 
@@ -110,6 +113,16 @@ export class GameController extends Component {
         g.stroke();
     }
 
+    private _initHolesFromConfig(): void {
+        if (!this.holeRoot || !this._levelConfig.holes) return;
+
+        for (const config of this._levelConfig.holes) {
+            const group = new HoleGroup();
+            group.init(config, this.holeRoot);
+            GameRuntime.holeGroups.push(group);
+        }
+    }
+
     private _initArrowsFromConfig(): void {
         if (!this.arrowRoot || !this._levelConfig.arrows) return;
 
@@ -122,10 +135,13 @@ export class GameController extends Component {
         const arrowNode = instantiate(this.arrowPrefab);
         this.arrowRoot.addChild(arrowNode);
         arrowNode.name = `Arrow_${config.id}`;
-
-        arrowNode.setPosition(new Vec3(config.startPos[0], config.startPos[1], 0));
+        arrowNode.setPosition(Vec3.ZERO);
         const arrowComp = arrowNode.getComponent(Arrow);
         arrowComp.init(config);
+        arrowComp.setOnDestroyed(() => {
+            const index = this._arrows.indexOf(arrowComp);
+            if (index >= 0) this._arrows.splice(index, 1);
+        });
         this._arrows.push(arrowComp);
     }
 

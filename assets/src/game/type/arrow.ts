@@ -17,5 +17,6 @@ export enum ArrowDirection {
 export enum ArrowState {
     IDLE = 'Idle',
     MOVING = 'Moving',
+    ENTERING_HOLE = 'EnteringHole',
     FINISHED = 'Finished',
 }
