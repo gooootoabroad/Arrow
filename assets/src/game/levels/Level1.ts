@@ -56,12 +56,23 @@ export const Level1: LevelMapConfig = {
             direction: ArrowDirection.LEFT,
             colorType: EArrowColor.RED,
         },
+        {
+            id: 2,
+            startPos: [0, -1],
+            offsetCoords: [
+                [1, -1],
+                [2, -2],
+                [2, -3],
+            ],
+            direction: ArrowDirection.LEFT,
+            colorType: EArrowColor.BLUE,
+        },
     ],
     holes: [
         {
             id: 1,
-            position: [0, 280],
-            expectColorType: EArrowColor.RED,
+            positions: [[0, 5], [0, 6]],
+            colorTypes: [EArrowColor.RED, EArrowColor.BLUE],
         },
     ],
 };

@@ -11,8 +11,8 @@ export interface ArrowSpawnConfig {
 
 export interface HoleSpawnConfig {
     id: number;
-    position: number[];
-    expectColorType: EArrowColor;
+    positions: number[][];
+    colorTypes: EArrowColor[];
 }
 
 export interface PathConfig {

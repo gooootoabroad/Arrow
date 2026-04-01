@@ -1,9 +1,12 @@
 import { Vec2 } from "cc";
 import { GameConfig } from "../../global/GameConfig";
+import { HoleGroup } from "../entity/HoleGroup";
 
 export class GameRuntime {
     // 关卡外圈路径
     private static _levelPathPoints: Vec2[] = [];
+    // 孔洞组列表
+    public static holeGroups: HoleGroup[] = [];
 
     public static get levelPathPoints(): readonly Vec2[] {
         return this._levelPathPoints;
