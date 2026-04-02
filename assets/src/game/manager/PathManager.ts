@@ -10,6 +10,7 @@ export class PathManager {
 
     private _pathPoints: Vec2[] = [];
     private _occupiedIndices: Map<number, string> = new Map();
+    private _coordIndexMap: Map<string, number> = new Map();
 
     get pathPoints(): readonly Vec2[] {
         return this._pathPoints;
@@ -26,6 +27,15 @@ export class PathManager {
     init(points: Vec2[]) {
         this._pathPoints = points;
         this._occupiedIndices.clear();
+        this._coordIndexMap.clear();
+        for (let i = 0; i < points.length; i++) {
+            let key = points[i].x + "," + points[i].y;
+            this._coordIndexMap.set(key, i);
+        }
+    }
+
+    getIndexAt(x: number, y: number): number {
+        return this._coordIndexMap.get(x + "," + y) ?? -1;
     }
 
     isOccupied(index: number): boolean {
@@ -50,19 +60,6 @@ export class PathManager {
 
     isFull(): boolean {
         return this._occupiedIndices.size >= this._pathPoints.length;
-    }
-
-    findNearestIndex(headPos: Vec2): number {
-        let minDist = Infinity;
-        let nearestIndex = -1;
-        for (let i = 0; i < this._pathPoints.length; i++) {
-            let dist = Vec2.distance(headPos, this._pathPoints[i]);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestIndex = i;
-            }
-        }
-        return nearestIndex;
     }
 
     reset() {
