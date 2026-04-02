@@ -54,22 +54,18 @@ export class GridManager {
         if (dirX !== 0) {
             const row = this.rowOccupied.get(y);
             if (!row) return true;
-            const sorted = Array.from(row).sort((a, b) => a - b);
-            if (dirX > 0) {
-                return !sorted.some(v => v > x);
-            } else {
-                return !sorted.some(v => v < x);
+            for (let v of row) {
+                if (dirX > 0 ? v > x : v < x) return false;
             }
+            return true;
         }
         if (dirY !== 0) {
             const col = this.colOccupied.get(x);
             if (!col) return true;
-            const sorted = Array.from(col).sort((a, b) => a - b);
-            if (dirY > 0) {
-                return !sorted.some(v => v > y);
-            } else {
-                return !sorted.some(v => v < y);
+            for (let v of col) {
+                if (dirY > 0 ? v > y : v < y) return false;
             }
+            return true;
         }
         return true;
     }

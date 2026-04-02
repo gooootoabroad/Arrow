@@ -1,4 +1,4 @@
-import { _decorator, Node, Vec2, Vec3, tween } from 'cc';
+import { _decorator, Node, Vec3, tween, Vec2 } from 'cc';
 import { Hole } from '../entity/Hole';
 import { EArrowColor } from '../type/arrow';
 import { GameConfig } from '../../global/GameConfig';
@@ -60,14 +60,16 @@ export class HoleGroup {
         }
     }
 
-    checkHoleMatch(headWorldPos: Vec2, enterThreshold: number): Hole | null {
+    checkHoleMatch(headWorldX: number, headWorldY: number, enterThreshold: number): Hole | null {
         const activeHole = this.activeHole;
         if (!activeHole) return null;
 
         const holeWorldPos = activeHole.node.position;
-        const dist = Vec2.distance(headWorldPos, new Vec2(holeWorldPos.x, holeWorldPos.y));
+        let dx = headWorldX - holeWorldPos.x;
+        let dy = headWorldY - holeWorldPos.y;
+        let dist = dx * dx + dy * dy;
 
-        if (dist < enterThreshold) {
+        if (dist < enterThreshold * enterThreshold) {
             return activeHole;
         }
         return null;

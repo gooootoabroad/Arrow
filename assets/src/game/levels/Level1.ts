@@ -58,11 +58,11 @@ export const Level1: LevelMapConfig = {
         },
         {
             id: 2,
-            startPos: [0, -3],
+            startPos: [0, -2],
             offsetCoords: [
-                [0, -2],
+                [0, -3],
             ],
-            direction: ArrowDirection.DOWN,
+            direction: ArrowDirection.UP,
             colorType: EArrowColor.BLUE,
         },
     ],

@@ -1,5 +1,5 @@
 
-import { _decorator, Color, Component, Graphics, Vec3, Enum, Vec2, Node } from 'cc';
+import { _decorator, Color, Component, Graphics, Vec2 } from 'cc';
 import { ArrowDirection, ArrowState, EArrowColor } from '../type/arrow';
 import { GameConfig } from '../../global/GameConfig';
 import { ArrowSpawnConfig } from '../config/LevelConfig';
@@ -12,6 +12,11 @@ let { ccclass, property } = _decorator;
 
 @ccclass('Arrow')
 export class Arrow extends Component {
+    private static readonly DIR_UP = new Vec2(0, 1);
+    private static readonly DIR_DOWN = new Vec2(0, -1);
+    private static readonly DIR_LEFT = new Vec2(-1, 0);
+    private static readonly DIR_RIGHT = new Vec2(1, 0);
+
     private colorType: EArrowColor = EArrowColor.RED;
     private direction: ArrowDirection = ArrowDirection.RIGHT;
 
@@ -22,18 +27,21 @@ export class Arrow extends Component {
     private _state: ArrowState = ArrowState.IDLE;
     private _points: Vec2[] = [];
     private _originalPoints: Vec2[] = [];
-    private _currentPathIndex: number = -1;
+    private _nextPathIndex: number = -1;
     private _targetHolePos: Vec2 = null;
     private _onDestroyed: () => void = null;
     private _arrowId: string = '';
     private _occupiedPathIndices: Set<number> = new Set();
+
+    private _tmpVec2A = new Vec2();
+    private _tmpColor = new Color();
 
     public setOnDestroyed(callback: () => void) {
         this._onDestroyed = callback;
     }
 
     get displayColor(): Color {
-        return new Color().fromHEX(this.colorType);
+        return this._tmpColor.fromHEX(this.colorType);
     }
 
     get state(): ArrowState {
@@ -44,20 +52,13 @@ export class Arrow extends Component {
         return this._points;
     }
 
-    private _gridToWorld(p: Vec2): Vec2 {
-        return new Vec2(p.x * GameConfig.UNIT_SIZE, p.y * GameConfig.UNIT_SIZE);
-    }
+    private _pointsToPathIndices(): Set<number> {
+        let indices = new Set(this._occupiedPathIndices);
+        indices.add(this._nextPathIndex);
 
-    private _pointsToPathIndices(points: Vec2[]): Set<number> {
-        let indices = new Set<number>();
-        for (let p of points) {
-            let idx = PathManager.instance.findNearestIndex(p);
-            if (idx >= 0) {
-                let pt = PathManager.instance.pathPoints[idx];
-                if (Vec2.distance(p, pt) < 0.5) {
-                    indices.add(idx);
-                }
-            }
+        if (indices.size > this.points.length) {
+            const first = indices.values().next().value;
+            indices.delete(first);
         }
         return indices;
     }
@@ -69,6 +70,7 @@ export class Arrow extends Component {
         this._state = ArrowState.IDLE;
         this._points = [];
         this._arrowId = `arrow_${config.id}`;
+        this._targetHolePos = new Vec2();
         this._points.push(new Vec2(config.startPos[0], config.startPos[1]));
         for (let offset of config.offsetCoords) {
             this._points.push(new Vec2(offset[0], offset[1]));
@@ -98,30 +100,39 @@ export class Arrow extends Component {
     }
 
     public hitTest(worldPos: Vec2, threshold: number = this.lineWidth): boolean {
+        let U = GameConfig.UNIT_SIZE;
         for (let i = 0; i < this._points.length - 1; i++) {
-            let a = this._gridToWorld(this._points[i]);
-            let b = this._gridToWorld(this._points[i + 1]);
-            let dist = this.pointToSegmentDistance(worldPos, a, b);
+            let ax = this._points[i].x * U;
+            let ay = this._points[i].y * U;
+            let bx = this._points[i + 1].x * U;
+            let by = this._points[i + 1].y * U;
+            let dist = this.pointToSegmentDistance(worldPos.x, worldPos.y, ax, ay, bx, by);
             if (dist < threshold) return true;
         }
         return false;
     }
 
-    private pointToSegmentDistance(p: Vec2, a: Vec2, b: Vec2): number {
-        let ab = new Vec2();
-        Vec2.subtract(ab, b, a);
-        let ap = new Vec2();
-        Vec2.subtract(ap, p, a);
+    private pointToSegmentDistance(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+        let abx = bx - ax;
+        let aby = by - ay;
+        let apx = px - ax;
+        let apy = py - ay;
 
-        let abLenSq = Vec2.dot(ab, ab);
-        if (abLenSq === 0) return Vec2.distance(p, a);
+        let abLenSq = abx * abx + aby * aby;
+        if (abLenSq === 0) {
+            let dx = px - ax;
+            let dy = py - ay;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
 
-        let t = Vec2.dot(ap, ab) / abLenSq;
+        let t = (apx * abx + apy * aby) / abLenSq;
         t = Math.max(0, Math.min(1, t));
 
-        let closest = new Vec2();
-        Vec2.scaleAndAdd(closest, a, ab, t);
-        return Vec2.distance(p, closest);
+        let closestX = ax + abx * t;
+        let closestY = ay + aby * t;
+        let dx = px - closestX;
+        let dy = py - closestY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     draw() {
@@ -133,16 +144,17 @@ export class Arrow extends Component {
         g.lineJoin = Graphics.LineJoin.ROUND;
         g.lineCap = Graphics.LineCap.ROUND;
         g.strokeColor = this.displayColor;
+        let U = GameConfig.UNIT_SIZE;
 
-        if (this._points.length >= 2) {
-            let p0 = this._gridToWorld(this._points[0]);
-            g.moveTo(p0.x, p0.y);
-            for (let i = 1; i < this._points.length; i++) {
-                let pi = this._gridToWorld(this._points[i]);
-                g.lineTo(pi.x, pi.y);
-            }
-            g.stroke();
+        let p0x = this._points[0].x * U;
+        let p0y = this._points[0].y * U;
+        g.moveTo(p0x, p0y);
+        for (let i = 1; i < this._points.length; i++) {
+            let pix = this._points[i].x * U;
+            let piy = this._points[i].y * U;
+            g.lineTo(pix, piy);
         }
+        g.stroke();
 
         this.drawHead();
     }
@@ -151,28 +163,36 @@ export class Arrow extends Component {
         if (this._points.length < 2) return;
 
         let g = this._graphics;
-        let headPos = this._gridToWorld(this._points[0]);
-        let nextPos = this._gridToWorld(this._points[1]);
+        let U = GameConfig.UNIT_SIZE;
+        let headX = this._points[0].x * U;
+        let headY = this._points[0].y * U;
+        let nextX = this._points[1].x * U;
+        let nextY = this._points[1].y * U;
 
-        let dir = new Vec2();
-        Vec2.subtract(dir, headPos, nextPos);
-        dir.normalize();
+        let dirX = headX - nextX;
+        let dirY = headY - nextY;
+        let dirLen = Math.sqrt(dirX * dirX + dirY * dirY);
+        if (dirLen === 0) return;
+        dirX /= dirLen;
+        dirY /= dirLen;
 
-        let perp = new Vec2(-dir.y, dir.x);
+        let perpX = -dirY;
+        let perpY = dirX;
 
-        let p1 = new Vec2();
-        Vec2.add(p1, headPos, dir.clone().multiplyScalar(this.headSize));
+        let p1x = headX + dirX * this.headSize;
+        let p1y = headY + dirY * this.headSize;
 
-        let p2 = new Vec2();
-        Vec2.add(p2, headPos, perp.clone().multiplyScalar(-this.lineWidth * 0.6));
+        let hs = this.lineWidth * 0.6;
+        let p2x = headX + perpX * (-hs);
+        let p2y = headY + perpY * (-hs);
 
-        let p3 = new Vec2();
-        Vec2.add(p3, headPos, perp.clone().multiplyScalar(this.lineWidth * 0.6));
+        let p3x = headX + perpX * hs;
+        let p3y = headY + perpY * hs;
 
         g.fillColor = this.displayColor;
-        g.moveTo(p1.x, p1.y);
-        g.lineTo(p2.x, p2.y);
-        g.lineTo(p3.x, p3.y);
+        g.moveTo(p1x, p1y);
+        g.lineTo(p2x, p2y);
+        g.lineTo(p3x, p3y);
         g.close();
         g.fill();
     }
@@ -188,7 +208,6 @@ export class Arrow extends Component {
         this._state = ArrowState.MOVING;
 
         let moveDir = this.getDirectionVector(this.direction);
-        let threshold = 1.1;
 
         let moveStep = () => {
             if (this._state === ArrowState.ENTERING_HOLE) {
@@ -202,11 +221,11 @@ export class Arrow extends Component {
                 return;
             }
 
-            if (this._currentPathIndex < 0) {
-                this._checkPathReach(threshold);
+            if (this._nextPathIndex < 0) {
+                this._checkPathReach();
             }
 
-            if (this._currentPathIndex >= 0) {
+            if (this._nextPathIndex >= 0) {
                 this._moveAlongPath();
             } else {
                 this._moveStraight(moveDir);
@@ -218,31 +237,32 @@ export class Arrow extends Component {
         this.schedule(moveStep, 0.5);
     }
 
-    private _checkPathReach(threshold: number) {
-        if (PathManager.instance.pathPoints.length < 2) return;
-
+    private _checkPathReach() {
         let headPos = this._points[0];
-        let nearestIndex = PathManager.instance.findNearestIndex(headPos);
-        let minDist = Vec2.distance(headPos, PathManager.instance.pathPoints[nearestIndex]);
-
-        if (minDist < threshold) {
-            this._currentPathIndex = nearestIndex;
-            //this._points[0] = PathManager.instance.pathPoints[nearestIndex].clone();
+        let dir = this.getDirectionVector(this.direction);
+        let nextX = headPos.x + dir.x;
+        let nextY = headPos.y + dir.y;
+        let idx = PathManager.instance.getIndexAt(nextX, nextY);
+        if (idx >= 0) {
+            this._nextPathIndex = idx;
         }
     }
 
     private _moveStraight(moveDir: Vec2) {
-        let oldPoints = this._points.map(p => p.clone());
-        let newPoints: Vec2[] = [];
-        let headNewPos = new Vec2();
-        Vec2.add(headNewPos, oldPoints[0], moveDir);
-        newPoints.push(headNewPos);
+        let prevX = this._points[0].x;
+        let prevY = this._points[0].y;
 
-        for (let i = 1; i < oldPoints.length; i++) {
-            newPoints.push(oldPoints[i - 1].clone());
+        this._points[0].x = prevX + moveDir.x;
+        this._points[0].y = prevY + moveDir.y;
+
+        for (let i = 1; i < this._points.length; i++) {
+            let tmpX = this._points[i].x;
+            let tmpY = this._points[i].y;
+            this._points[i].x = prevX;
+            this._points[i].y = prevY;
+            prevX = tmpX;
+            prevY = tmpY;
         }
-
-        this._points = newPoints;
 
         if (this._checkCollision()) {
             this._resetToOriginal();
@@ -271,7 +291,7 @@ export class Arrow extends Component {
         this._state = ArrowState.IDLE;
         this._points = this._originalPoints.map(p => p.clone());
         this._occupiedPathIndices.clear();
-        this._currentPathIndex = -1;
+        this._nextPathIndex = -1;
         PathManager.instance.freeAll(this._arrowId);
         this._registerGrid();
         this.unscheduleAllCallbacks();
@@ -281,52 +301,44 @@ export class Arrow extends Component {
     private _moveAlongPath() {
         if (PathManager.instance.pathPoints.length < 2) return;
 
-        let oldPoints = this._points.map(p => p.clone());
-        let newPoints: Vec2[] = [];
-
-        let headPos = oldPoints[0];
-        let nextIndex = this._currentPathIndex;
-        //let nextIndex = (this._currentPathIndex + 1) % PathManager.instance.pathPoints.length;
-        let nextPt = PathManager.instance.pathPoints[nextIndex];
-
-        let dir = new Vec2();
-        Vec2.subtract(dir, nextPt, headPos);
-        dir.normalize();
-
-        newPoints.push(new Vec2(oldPoints[0].x + dir.x, oldPoints[0].y + dir.y));
-
-        for (let i = 1; i < oldPoints.length; i++) {
-            newPoints.push(oldPoints[i - 1].clone());
-        }
-
-        let newOccupied = this._pointsToPathIndices(newPoints);
-        let needOccupy = new Set<number>();
+        let newOccupied = this._pointsToPathIndices();
         for (let idx of newOccupied) {
             if (!this._occupiedPathIndices.has(idx)) {
-                needOccupy.add(idx);
+                if (PathManager.instance.isOccupied(idx)) return;
+                PathManager.instance.occupy(idx, this._arrowId);
             }
         }
 
-        for (let idx of needOccupy) {
-            if (PathManager.instance.isOccupied(idx)) return;
-            // 需要直接占位，因为可能有其他箭头正在移动，等到下一帧再占位可能就被占了
-            PathManager.instance.occupy(idx, this._arrowId);
+        let prevX = this._points[0].x;
+        let prevY = this._points[0].y;
+
+        let nextPt = PathManager.instance.pathPoints[this._nextPathIndex];
+        this._tmpVec2A.x = nextPt.x - prevX;
+        this._tmpVec2A.y = nextPt.y - prevY;
+        this._tmpVec2A.normalize();
+
+        this._points[0].x = prevX + this._tmpVec2A.x;
+        this._points[0].y = prevY + this._tmpVec2A.y;
+
+        for (let i = 1; i < this._points.length; i++) {
+            let tmpX = this._points[i].x;
+            let tmpY = this._points[i].y;
+            this._points[i].x = prevX;
+            this._points[i].y = prevY;
+            prevX = tmpX;
+            prevY = tmpY;
         }
 
-        this._points = newPoints;
-        //this._currentPathIndex = nextIndex;
-        this._currentPathIndex = (this._currentPathIndex + 1) % PathManager.instance.pathPoints.length;
-        let oldOccupied = new Set(this._occupiedPathIndices);
-        this._occupiedPathIndices = newOccupied;
+        this._nextPathIndex = (this._nextPathIndex + 1) % PathManager.instance.pathPoints.length;
+        let oldOccupied = this._occupiedPathIndices;
 
         for (let idx of oldOccupied) {
-            if (!this._occupiedPathIndices.has(idx)) {
+            if (!newOccupied.has(idx)) {
                 PathManager.instance.free(idx);
             }
         }
-        // for (let idx of needOccupy) {
-        //     PathManager.instance.occupy(idx, this._arrowId);
-        // }
+
+        this._occupiedPathIndices = newOccupied;
 
         this._checkHoleEnter();
     }
@@ -334,11 +346,13 @@ export class Arrow extends Component {
     private _checkHoleEnter() {
         if (GameRuntime.holeGroups.length === 0) return;
 
-        let headWorldPos = this._gridToWorld(this._points[0]);
+        let headPos = this._points[0];
+        let headWorldX = headPos.x * GameConfig.UNIT_SIZE;
+        let headWorldY = headPos.y * GameConfig.UNIT_SIZE;
         let enterThreshold = GameConfig.UNIT_SIZE * 1.5;
 
         for (let group of GameRuntime.holeGroups) {
-            const hole = group.checkHoleMatch(headWorldPos, enterThreshold);
+            const hole = group.checkHoleMatch(headWorldX, headWorldY, enterThreshold);
             if (hole && hole.checkMatch(this.colorType)) {
                 this._enterHole(hole, group);
                 return;
@@ -350,7 +364,8 @@ export class Arrow extends Component {
         hole.occupied = true;
         this._state = ArrowState.ENTERING_HOLE;
         let holeWorldPos = hole.node.position;
-        this._targetHolePos = new Vec2(holeWorldPos.x / GameConfig.UNIT_SIZE, holeWorldPos.y / GameConfig.UNIT_SIZE);
+        this._targetHolePos.x = holeWorldPos.x / GameConfig.UNIT_SIZE;
+        this._targetHolePos.y = holeWorldPos.y / GameConfig.UNIT_SIZE;
         this._activeGroup = group;
         PathManager.instance.freeAll(this._arrowId);
     }
@@ -374,27 +389,28 @@ export class Arrow extends Component {
             return;
         }
 
-        let oldPoints = this._points.map(p => p.clone());
-        let newPoints: Vec2[] = [];
+        let prevX = this._points[0].x;
+        let prevY = this._points[0].y;
 
-        let headDir = new Vec2();
-        Vec2.subtract(headDir, this._targetHolePos, oldPoints[0]);
-        let distToHole = headDir.length();
-        headDir.normalize();
+        this._tmpVec2A.x = this._targetHolePos.x - prevX;
+        this._tmpVec2A.y = this._targetHolePos.y - prevY;
+        let distToHole = this._tmpVec2A.length();
+        this._tmpVec2A.normalize();
 
-        let stepDist = 1.0;
-        let headNewPos = new Vec2();
-        Vec2.add(headNewPos, oldPoints[0], headDir.clone().multiplyScalar(stepDist));
-        newPoints.push(headNewPos);
+        this._points[0].x = prevX + this._tmpVec2A.x;
+        this._points[0].y = prevY + this._tmpVec2A.y;
 
-        for (let i = 1; i < oldPoints.length; i++) {
-            newPoints.push(oldPoints[i - 1].clone());
+        for (let i = 1; i < this._points.length; i++) {
+            let tmpX = this._points[i].x;
+            let tmpY = this._points[i].y;
+            this._points[i].x = prevX;
+            this._points[i].y = prevY;
+            prevX = tmpX;
+            prevY = tmpY;
         }
 
-        this._points = newPoints;
-
-        if (distToHole < stepDist) {
-            this._points.shift();
+        if (distToHole < 1.0) {
+            this._points.pop();
         }
     }
 
@@ -405,11 +421,11 @@ export class Arrow extends Component {
 
     private getDirectionVector(dir: ArrowDirection): Vec2 {
         switch (dir) {
-            case ArrowDirection.UP: return new Vec2(0, 1);
-            case ArrowDirection.DOWN: return new Vec2(0, -1);
-            case ArrowDirection.LEFT: return new Vec2(-1, 0);
-            case ArrowDirection.RIGHT: return new Vec2(1, 0);
-            default: return new Vec2(1, 0);
+            case ArrowDirection.UP: return Arrow.DIR_UP;
+            case ArrowDirection.DOWN: return Arrow.DIR_DOWN;
+            case ArrowDirection.LEFT: return Arrow.DIR_LEFT;
+            case ArrowDirection.RIGHT: return Arrow.DIR_RIGHT;
+            default: return Arrow.DIR_RIGHT;
         }
     }
 }
