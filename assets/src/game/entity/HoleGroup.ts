@@ -9,7 +9,7 @@ const { ccclass } = _decorator;
 @ccclass('HoleGroup')
 export class HoleGroup {
     private holes: Hole[] = [];
-    private firstHolePos: Vec3 = null;
+    private firstHoleGridPos: Vec2 = null;
 
     get activeHole(): Hole {
         if (this.holes.length > 0) {
@@ -34,7 +34,7 @@ export class HoleGroup {
 
             if (i === 0) {
                 this.holes.push(holeComp);
-                this.firstHolePos = holeNode.position.clone();
+                this.firstHoleGridPos = new Vec2(pos[0], pos[1]);
             } else {
                 this.holes.push(holeComp);
             }
@@ -53,19 +53,19 @@ export class HoleGroup {
                     .start();
             }
 
-            // 最后一个移动到第一个位置
+            let worldPos = new Vec3(this.firstHoleGridPos.x * GameConfig.UNIT_SIZE, this.firstHoleGridPos.y * GameConfig.UNIT_SIZE, 0);
             tween(this.holes[0].node)
-                .to(0.2, { position: this.firstHolePos })
+                .to(0.2, { position: worldPos })
                 .start();
         }
     }
 
-    checkHoleMatch(headPos: Vec2, enterThreshold: number): Hole | null {
+    checkHoleMatch(headWorldPos: Vec2, enterThreshold: number): Hole | null {
         const activeHole = this.activeHole;
         if (!activeHole) return null;
 
         const holeWorldPos = activeHole.node.position;
-        const dist = Vec2.distance(headPos, new Vec2(holeWorldPos.x, holeWorldPos.y));
+        const dist = Vec2.distance(headWorldPos, new Vec2(holeWorldPos.x, holeWorldPos.y));
 
         if (dist < enterThreshold) {
             return activeHole;
