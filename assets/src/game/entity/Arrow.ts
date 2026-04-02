@@ -20,10 +20,6 @@ export class Arrow extends Component {
     private colorType: EArrowColor = EArrowColor.RED;
     private direction: ArrowDirection = ArrowDirection.RIGHT;
 
-    private lineWidth: number = GameConfig.UNIT_SIZE * 0.5;
-    private headSize: number = GameConfig.UNIT_SIZE * 0.7;
-
-    private _graphics: Graphics = null;
     private _state: ArrowState = ArrowState.IDLE;
     private _points: Vec2[] = [];
     private _originalPoints: Vec2[] = [];
@@ -32,6 +28,8 @@ export class Arrow extends Component {
     private _onDestroyed: () => void = null;
     private _arrowId: string = '';
     private _occupiedPathIndices: Set<number> = new Set();
+    private _activeGroup: HoleGroup = null;
+    private _isFirstEnterHole: boolean = false;
 
     private _tmpVec2A = new Vec2();
     private _tmpColor = new Color();
@@ -52,19 +50,7 @@ export class Arrow extends Component {
         return this._points;
     }
 
-    private _pointsToPathIndices(): Set<number> {
-        let indices = new Set(this._occupiedPathIndices);
-        indices.add(this._nextPathIndex);
-
-        if (indices.size > this.points.length) {
-            const first = indices.values().next().value;
-            indices.delete(first);
-        }
-        return indices;
-    }
-
     public init(config: ArrowSpawnConfig) {
-        this._graphics = this.getComponent(Graphics);
         this.colorType = config.colorType;
         this.direction = config.direction;
         this._state = ArrowState.IDLE;
@@ -78,7 +64,6 @@ export class Arrow extends Component {
 
         this._originalPoints = this._points.map(p => p.clone());
         this._registerGrid();
-        this.draw();
     }
 
     private _registerGrid() {
@@ -99,7 +84,7 @@ export class Arrow extends Component {
         return GridManager.instance.checkAheadClear(headPos.x, headPos.y, dir.x, dir.y);
     }
 
-    public hitTest(worldPos: Vec2, threshold: number = this.lineWidth): boolean {
+    public hitTest(worldPos: Vec2, threshold: number = GameConfig.arrowLineWidth): boolean {
         let U = GameConfig.UNIT_SIZE;
         for (let i = 0; i < this._points.length - 1; i++) {
             let ax = this._points[i].x * U;
@@ -135,37 +120,24 @@ export class Arrow extends Component {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    draw() {
-        if (!this._graphics || this._points.length < 2) return;
+    public drawTo(g: Graphics) {
+        if (this._points.length < 2) return;
 
-        let g = this._graphics;
-        g.clear();
-        g.lineWidth = this.lineWidth;
-        g.lineJoin = Graphics.LineJoin.ROUND;
-        g.lineCap = Graphics.LineCap.ROUND;
-        g.strokeColor = this.displayColor;
         let U = GameConfig.UNIT_SIZE;
-
+        let color = this.displayColor;
         let p0x = this._points[0].x * U;
         let p0y = this._points[0].y * U;
+
+        g.strokeColor = color;
+
         g.moveTo(p0x, p0y);
         for (let i = 1; i < this._points.length; i++) {
-            let pix = this._points[i].x * U;
-            let piy = this._points[i].y * U;
-            g.lineTo(pix, piy);
+            g.lineTo(this._points[i].x * U, this._points[i].y * U);
         }
         g.stroke();
 
-        this.drawHead();
-    }
-
-    private drawHead() {
-        if (this._points.length < 2) return;
-
-        let g = this._graphics;
-        let U = GameConfig.UNIT_SIZE;
-        let headX = this._points[0].x * U;
-        let headY = this._points[0].y * U;
+        let headX = p0x;
+        let headY = p0y;
         let nextX = this._points[1].x * U;
         let nextY = this._points[1].y * U;
 
@@ -179,17 +151,15 @@ export class Arrow extends Component {
         let perpX = -dirY;
         let perpY = dirX;
 
-        let p1x = headX + dirX * this.headSize;
-        let p1y = headY + dirY * this.headSize;
-
-        let hs = this.lineWidth * 0.6;
+        let p1x = headX + dirX * GameConfig.arrowHeadSize;
+        let p1y = headY + dirY * GameConfig.arrowHeadSize;
+        let hs = GameConfig.arrowLineWidth * 0.6;
         let p2x = headX + perpX * (-hs);
         let p2y = headY + perpY * (-hs);
-
         let p3x = headX + perpX * hs;
         let p3y = headY + perpY * hs;
 
-        g.fillColor = this.displayColor;
+        g.fillColor = color;
         g.moveTo(p1x, p1y);
         g.lineTo(p2x, p2y);
         g.lineTo(p3x, p3y);
@@ -197,44 +167,35 @@ export class Arrow extends Component {
         g.fill();
     }
 
-    startMoving() {
+    public startMoving() {
         if (this._state !== ArrowState.IDLE) return;
 
-        if (!this.canMoveToPath()) {
-        } else {
+        if (this.canMoveToPath()) {
             this._unregisterGrid();
         }
 
         this._state = ArrowState.MOVING;
+    }
 
-        let moveDir = this.getDirectionVector(this.direction);
+    public tick() {
+        if (this._state === ArrowState.ENTERING_HOLE) {
+            this._moveIntoHole();
+            return true;
+        }
 
-        let moveStep = () => {
-            if (this._state === ArrowState.ENTERING_HOLE) {
-                this._moveIntoHole();
-                this.draw();
-                return;
-            }
+        if (this._state !== ArrowState.MOVING) return false;
 
-            if (this._state !== ArrowState.MOVING) {
-                this.unschedule(moveStep);
-                return;
-            }
+        if (this._nextPathIndex < 0) {
+            this._checkPathReach();
+        }
 
-            if (this._nextPathIndex < 0) {
-                this._checkPathReach();
-            }
+        if (this._nextPathIndex >= 0) {
+            this._moveAlongPath();
+        } else {
+            this._moveStraight();
+        }
 
-            if (this._nextPathIndex >= 0) {
-                this._moveAlongPath();
-            } else {
-                this._moveStraight(moveDir);
-            }
-
-            this.draw();
-        };
-
-        this.schedule(moveStep, 0.5);
+        return true;
     }
 
     private _checkPathReach() {
@@ -248,12 +209,13 @@ export class Arrow extends Component {
         }
     }
 
-    private _moveStraight(moveDir: Vec2) {
+    private _moveStraight() {
+        let dir = this.getDirectionVector(this.direction);
         let prevX = this._points[0].x;
         let prevY = this._points[0].y;
 
-        this._points[0].x = prevX + moveDir.x;
-        this._points[0].y = prevY + moveDir.y;
+        this._points[0].x = prevX + dir.x;
+        this._points[0].y = prevY + dir.y;
 
         for (let i = 1; i < this._points.length; i++) {
             let tmpX = this._points[i].x;
@@ -294,8 +256,6 @@ export class Arrow extends Component {
         this._nextPathIndex = -1;
         PathManager.instance.freeAll(this._arrowId);
         this._registerGrid();
-        this.unscheduleAllCallbacks();
-        this.draw();
     }
 
     private _moveAlongPath() {
@@ -343,6 +303,17 @@ export class Arrow extends Component {
         this._checkHoleEnter();
     }
 
+    private _pointsToPathIndices(): Set<number> {
+        let indices = new Set(this._occupiedPathIndices);
+        indices.add(this._nextPathIndex);
+
+        if (indices.size > this.points.length) {
+            const first = indices.values().next().value;
+            indices.delete(first);
+        }
+        return indices;
+    }
+
     private _checkHoleEnter() {
         if (GameRuntime.holeGroups.length === 0) return;
 
@@ -362,6 +333,7 @@ export class Arrow extends Component {
 
     private _enterHole(hole: Hole, group: HoleGroup) {
         hole.occupied = true;
+        this._isFirstEnterHole = true;
         this._state = ArrowState.ENTERING_HOLE;
         let holeWorldPos = hole.node.position;
         this._targetHolePos.x = holeWorldPos.x / GameConfig.UNIT_SIZE;
@@ -370,12 +342,14 @@ export class Arrow extends Component {
         PathManager.instance.freeAll(this._arrowId);
     }
 
-    private _activeGroup: HoleGroup = null;
-
     private _moveIntoHole() {
+        if (!this._isFirstEnterHole) {
+            this._points.pop();
+        }
+        this._isFirstEnterHole = false;
+
         if (this._points.length <= 1) {
             this._state = ArrowState.FINISHED;
-            this.unscheduleAllCallbacks();
 
             if (this._activeGroup) {
                 this._activeGroup.onHoleEnter();
@@ -391,14 +365,8 @@ export class Arrow extends Component {
 
         let prevX = this._points[0].x;
         let prevY = this._points[0].y;
-
-        this._tmpVec2A.x = this._targetHolePos.x - prevX;
-        this._tmpVec2A.y = this._targetHolePos.y - prevY;
-        let distToHole = this._tmpVec2A.length();
-        this._tmpVec2A.normalize();
-
-        this._points[0].x = prevX + this._tmpVec2A.x;
-        this._points[0].y = prevY + this._tmpVec2A.y;
+        this._points[0].x = this._targetHolePos.x;
+        this._points[0].y = this._targetHolePos.y;
 
         for (let i = 1; i < this._points.length; i++) {
             let tmpX = this._points[i].x;
@@ -408,14 +376,9 @@ export class Arrow extends Component {
             prevX = tmpX;
             prevY = tmpY;
         }
-
-        if (distToHole < 1.0) {
-            this._points.pop();
-        }
     }
 
-    stopMoving() {
-        this.unscheduleAllCallbacks();
+    public stopMoving() {
         this._state = ArrowState.IDLE;
     }
 

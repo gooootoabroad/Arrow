@@ -28,6 +28,7 @@ export class GameController extends Component {
     private _levelConfig: LevelMapConfig = null;
     private _arrows: Arrow[] = [];
     private _pathGraphics: Graphics = null;
+    private _arrowGraphics: Graphics = null;
     private _mapRoot: Node = null;
 
     protected onLoad(): void {
@@ -44,7 +45,10 @@ export class GameController extends Component {
         this._initMap();
         this._initPath();
         this._initHolesFromConfig();
+        this._initArrowGraphics();
         this._initArrowsFromConfig();
+
+        this.schedule(this._arrowTick, 0.5);
     }
 
     private initRuntime() {
@@ -117,6 +121,17 @@ export class GameController extends Component {
         g.stroke();
     }
 
+    private _initArrowGraphics() {
+        this._arrowGraphics = this.arrowRoot.getComponent(Graphics);
+        if (!this._arrowGraphics) {
+            this._arrowGraphics = this.arrowRoot.addComponent(Graphics);
+        }
+
+        this._arrowGraphics.lineWidth = GameConfig.arrowLineWidth;
+        this._arrowGraphics.lineJoin = Graphics.LineJoin.ROUND;
+        this._arrowGraphics.lineCap = Graphics.LineCap.ROUND;
+    }
+
     private _initHolesFromConfig(): void {
         if (!this.holeRoot || !this._levelConfig.holes) return;
 
@@ -147,6 +162,17 @@ export class GameController extends Component {
             if (index >= 0) this._arrows.splice(index, 1);
         });
         this._arrows.push(arrowComp);
+    }
+
+    private _arrowTick() {
+        for (let arrow of this._arrows) {
+            arrow.tick();
+        }
+
+        this._arrowGraphics.clear();
+        for (let arrow of this._arrows) {
+            arrow.drawTo(this._arrowGraphics);
+        }
     }
 
     private onClick(e: EventTouch) {

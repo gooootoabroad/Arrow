@@ -58,11 +58,11 @@ export const Level1: LevelMapConfig = {
         },
         {
             id: 2,
-            startPos: [0, -2],
+            startPos: [0, -3],
             offsetCoords: [
-                [0, -3],
+                [0, -2],
             ],
-            direction: ArrowDirection.UP,
+            direction: ArrowDirection.DOWN,
             colorType: EArrowColor.BLUE,
         },
     ],
@@ -70,7 +70,7 @@ export const Level1: LevelMapConfig = {
         {
             id: 1,
             positions: [[0, 5], [0, 6]],
-            colorTypes: [EArrowColor.RED, EArrowColor.BLUE],
+            colorTypes: [EArrowColor.BLUE, EArrowColor.ORANGE],
         },
     ],
 };
