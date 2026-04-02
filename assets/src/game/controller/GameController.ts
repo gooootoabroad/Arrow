@@ -7,6 +7,7 @@ import { GameConfig } from '../../global/GameConfig';
 import { LoadMgr } from '../../manager/LoadMgr';
 import { Bundle } from '../../global/bundle';
 import { GameRuntime } from '../runtime/gameRuntime';
+import { PathManager } from '../manager/PathManager';
 
 const { ccclass, property } = _decorator;
 
@@ -48,7 +49,9 @@ export class GameController extends Component {
 
     private initRuntime() {
         GameRuntime.holeGroups = [];
-        GameRuntime.initLevelPathPoints(this._levelConfig.path.pathPoints);
+        const points = this._levelConfig.path.pathPoints.map(p => new Vec2(p[0], p[1]));
+        PathManager.instance.reset();
+        PathManager.instance.init(points);
     }
 
     private _initMap() {
@@ -96,7 +99,7 @@ export class GameController extends Component {
     }
 
     private _drawPath(): void {
-        if (!this._pathGraphics || GameRuntime.levelPathPoints.length < 2) return;
+        if (!this._pathGraphics || PathManager.instance.pathPoints.length < 2) return;
 
         const g = this._pathGraphics;
         g.clear();
@@ -105,11 +108,12 @@ export class GameController extends Component {
         g.lineCap = Graphics.LineCap.ROUND;
         g.lineJoin = Graphics.LineJoin.ROUND;
 
-        g.moveTo(GameRuntime.levelPathPoints[0].x, GameRuntime.levelPathPoints[0].y);
-        for (let i = 1; i < GameRuntime.levelPathPoints.length; i++) {
-            g.lineTo(GameRuntime.levelPathPoints[i].x, GameRuntime.levelPathPoints[i].y);
+        let pts = PathManager.instance.pathPoints;
+        g.moveTo(pts[0].x * GameConfig.UNIT_SIZE, pts[0].y * GameConfig.UNIT_SIZE);
+        for (let i = 1; i < pts.length; i++) {
+            g.lineTo(pts[i].x * GameConfig.UNIT_SIZE, pts[i].y * GameConfig.UNIT_SIZE);
         }
-        g.lineTo(GameRuntime.levelPathPoints[0].x, GameRuntime.levelPathPoints[0].y);
+        g.lineTo(pts[0].x * GameConfig.UNIT_SIZE, pts[0].y * GameConfig.UNIT_SIZE);
         g.stroke();
     }
 
