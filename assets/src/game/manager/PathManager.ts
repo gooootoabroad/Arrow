@@ -25,13 +25,36 @@ export class PathManager {
     }
 
     init(points: Vec2[]) {
-        this._pathPoints = points;
+        this._pathPoints = this._expandPath(points);
         this._occupiedIndices.clear();
         this._coordIndexMap.clear();
-        for (let i = 0; i < points.length; i++) {
-            let key = points[i].x + "," + points[i].y;
+        for (let i = 0; i < this._pathPoints.length; i++) {
+            let key = this._pathPoints[i].x + "," + this._pathPoints[i].y;
             this._coordIndexMap.set(key, i);
         }
+    }
+
+    private _expandPath(corners: Vec2[]): Vec2[] {
+        if (corners.length < 2) return [...corners];
+
+        const result: Vec2[] = [];
+
+        for (let i = 0; i < corners.length; i++) {
+            const p1 = corners[i];
+            const p2 = corners[(i + 1) % corners.length];
+
+            const dx = Math.sign(p2.x - p1.x);
+            const dy = Math.sign(p2.y - p1.y);
+
+            let cx = p1.x, cy = p1.y;
+            while (cx !== p2.x || cy !== p2.y) {
+                result.push(new Vec2(cx, cy));
+                cx += dx;
+                cy += dy;
+            }
+        }
+
+        return result;
     }
 
     getIndexAt(x: number, y: number): number {
