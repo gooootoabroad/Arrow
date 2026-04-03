@@ -110,18 +110,30 @@ export class GameController extends Component {
 
         const g = this._pathGraphics;
         g.clear();
-        g.lineWidth = this._levelConfig.path.pathWidth;
-        g.strokeColor = new Color(80, 80, 80, 255);
+        g.lineWidth = GameConfig.pathWidth;
+        g.strokeColor = new Color().fromHEX('#ADADAD');
         g.lineCap = Graphics.LineCap.ROUND;
         g.lineJoin = Graphics.LineJoin.ROUND;
 
+        const gapRatio = 0.3;
         let pts = PathManager.instance.pathPoints;
-        g.moveTo(pts[0].x * GameConfig.UNIT_SIZE, pts[0].y * GameConfig.UNIT_SIZE);
-        for (let i = 1; i < pts.length; i++) {
-            g.lineTo(pts[i].x * GameConfig.UNIT_SIZE, pts[i].y * GameConfig.UNIT_SIZE);
+
+        for (let i = 0; i < pts.length; i++) {
+            const p1 = pts[i];
+            const p2 = pts[(i + 1) % pts.length];
+
+            const x1 = p1.x * GameConfig.UNIT_SIZE;
+            const y1 = p1.y * GameConfig.UNIT_SIZE;
+            const x2 = p2.x * GameConfig.UNIT_SIZE;
+            const y2 = p2.y * GameConfig.UNIT_SIZE;
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+
+            g.moveTo(x1 + dx * gapRatio, y1 + dy * gapRatio);
+            g.lineTo(x2 - dx * gapRatio, y2 - dy * gapRatio);
+            g.stroke();
         }
-        g.lineTo(pts[0].x * GameConfig.UNIT_SIZE, pts[0].y * GameConfig.UNIT_SIZE);
-        g.stroke();
     }
 
     private _initArrowGraphics() {

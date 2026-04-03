@@ -320,10 +320,9 @@ export class Arrow extends Component {
         let headPos = this._points[0];
         let headWorldX = headPos.x * GameConfig.UNIT_SIZE;
         let headWorldY = headPos.y * GameConfig.UNIT_SIZE;
-        let enterThreshold = GameConfig.UNIT_SIZE * 1.5;
 
         for (let group of GameRuntime.holeGroups) {
-            const hole = group.checkHoleMatch(headWorldX, headWorldY, enterThreshold);
+            const hole = group.checkHoleMatch(headWorldX, headWorldY, GameConfig.enterThreshold);
             if (hole && hole.checkMatch(this.colorType)) {
                 this._enterHole(hole, group);
                 return;
