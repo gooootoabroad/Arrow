@@ -344,7 +344,7 @@ export class Arrow extends Component {
 
     private _moveIntoHole() {
         if (!this._isFirstEnterHole) {
-            this._points.pop();
+            this._points.shift();
         }
         this._isFirstEnterHole = false;
 

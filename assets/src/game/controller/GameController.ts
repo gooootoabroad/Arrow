@@ -25,6 +25,9 @@ export class GameController extends Component {
     @property(Prefab)
     private arrowPrefab: Prefab = null;
 
+    @property(Prefab)
+    private holeGroupPrefab: Prefab = null;
+
     private _levelConfig: LevelMapConfig = null;
     private _arrows: Arrow[] = [];
     private _pathGraphics: Graphics = null;
@@ -48,7 +51,7 @@ export class GameController extends Component {
         this._initArrowGraphics();
         this._initArrowsFromConfig();
 
-        this.schedule(this._arrowTick, 0.5);
+        this.schedule(this._arrowTick, 0.05);
     }
 
     private initRuntime() {
@@ -136,9 +139,12 @@ export class GameController extends Component {
         if (!this.holeRoot || !this._levelConfig.holes) return;
 
         for (const config of this._levelConfig.holes) {
-            const group = new HoleGroup();
-            group.init(config, this.holeRoot);
-            GameRuntime.holeGroups.push(group);
+            const group = instantiate(this.holeGroupPrefab);
+            group.name = `HoleGroup_${config.id}`;
+            this.holeRoot.addChild(group);
+            const script = group.getComponent(HoleGroup);
+            script.init(config);
+            GameRuntime.holeGroups.push(script);
         }
     }
 
