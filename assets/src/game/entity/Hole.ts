@@ -25,12 +25,10 @@ export class Hole extends Component {
         if (!this._graphics) {
             this._graphics = this.addComponent(Graphics);
         }
-
         this.draw();
     }
 
     public checkMatch(arrowColor: EArrowColor): boolean {
-        // TODO 当前只能一个洞获得一个箭头，后续根据type来实现是可以多个箭头
         return !this.occupied && this.expectColorType === arrowColor;
     }
 
