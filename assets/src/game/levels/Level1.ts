@@ -41,7 +41,6 @@ export const Level1: LevelMapConfig = {
             [-2, -4],
             [-3, -4],
         ],
-        pathWidth: 40,
     },
     arrows: [
         {
@@ -69,7 +68,7 @@ export const Level1: LevelMapConfig = {
     holes: [
         {
             id: 1,
-            positions: [[0, 5], [0, 6]],
+            positions: [[0, 5.5], [0, 7]],
             colorTypes: [EArrowColor.BLUE, EArrowColor.ORANGE],
         },
     ],

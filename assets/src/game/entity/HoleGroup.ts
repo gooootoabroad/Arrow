@@ -159,7 +159,7 @@ export class HoleGroup extends Component {
         let dy = headWorldY - holeWorldPos.y;
         let dist = dx * dx + dy * dy;
 
-        if (dist < enterThreshold * enterThreshold) {
+        if (dist <= enterThreshold * enterThreshold) {
             return activeHole;
         }
         return null;

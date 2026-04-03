@@ -17,7 +17,6 @@ export interface HoleSpawnConfig {
 
 export interface PathConfig {
     pathPoints: number[][];
-    pathWidth: number;
 }
 
 export interface LevelMapConfig {

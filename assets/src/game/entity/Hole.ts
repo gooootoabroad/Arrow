@@ -39,13 +39,13 @@ export class Hole extends Component {
         g.clear();
         g.lineWidth = 4;
         g.strokeColor = new Color().fromHEX(this.expectColorType);
-        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.4);
+        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.5);
         g.stroke();
 
         let fillColor = new Color().fromHEX(this.expectColorType);
         fillColor.a = 80;
         g.fillColor = fillColor;
-        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.35);
+        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.45);
         g.fill();
     }
 }

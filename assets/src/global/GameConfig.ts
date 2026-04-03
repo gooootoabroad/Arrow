@@ -6,4 +6,8 @@ export class GameConfig {
     static readonly arrowLineWidth: number = GameConfig.UNIT_SIZE * 0.5;
     // 箭头头部多大
     static readonly arrowHeadSize: number = GameConfig.UNIT_SIZE * 0.7;
+    // 箭头进入洞口的距离阈值
+    static readonly enterThreshold: number = GameConfig.UNIT_SIZE * 2;
+    // 路径线大小
+    static readonly pathWidth: number = 5;
 }
