@@ -1,6 +1,6 @@
-import { _decorator, Color, Component, Node, Vec3, Graphics, Vec2, Sprite, Prefab, EventTouch, UITransform, instantiate } from 'cc';
+import { _decorator, Color, Component, Node, Vec3, Graphics, Vec2, Sprite, Prefab, EventTouch, UITransform, instantiate, resources, JsonAsset } from 'cc';
 import { LevelMapConfig, ArrowSpawnConfig } from '../config/LevelConfig';
-import { Level1 } from '../levels/Level1';
+import { ArrowDirection } from '../type/arrow';
 import { Arrow } from '../entity/Arrow';
 import { HoleGroup } from '../entity/HoleGroup';
 import { GameConfig } from '../../global/GameConfig';
@@ -28,6 +28,8 @@ export class GameController extends Component {
     @property(Prefab)
     private holeGroupPrefab: Prefab = null;
 
+    private levelJsonPath: string = 'levels/level_2';
+
     private _levelConfig: LevelMapConfig = null;
     private _arrows: Arrow[] = [];
     private _pathGraphics: Graphics = null;
@@ -43,15 +45,26 @@ export class GameController extends Component {
     }
 
     protected start(): void {
-        this._levelConfig = Level1;
-        this.initRuntime();
-        this._initMap();
-        this._initPath();
-        this._initHolesFromConfig();
-        this._initArrowGraphics();
-        this._initArrowsFromConfig();
+        this.loadLevel(this.levelJsonPath);
+    }
 
-        this.schedule(this._arrowTick, 0.05);
+    private loadLevel(path: string) {
+        resources.load(path, JsonAsset, (err, asset) => {
+            if (err) {
+                console.error(`Failed to load level: ${path}`, err);
+                return;
+            }
+            this._levelConfig = asset.json as LevelMapConfig;
+            this._randomizeArrowDirections();
+            this.initRuntime();
+            this._initMap();
+            this._initPath();
+            this._initHolesFromConfig();
+            this._initArrowGraphics();
+            this._initArrowsFromConfig();
+
+            this.schedule(this._arrowTick, 0.05);
+        });
     }
 
     private initRuntime() {
@@ -59,6 +72,26 @@ export class GameController extends Component {
         const points = this._levelConfig.path.pathPoints.map(p => new Vec2(p[0], p[1]));
         PathManager.instance.reset();
         PathManager.instance.init(points);
+    }
+
+    private _randomizeArrowDirections() {
+        if (!this._levelConfig.arrows) return;
+        for (const arrow of this._levelConfig.arrows) {
+            if (Math.random() < 0.5) {
+                const { startPos, offsetCoords } = arrow;
+                const newStart = offsetCoords[offsetCoords.length - 1];
+                const newOffsets = [...offsetCoords.slice(0, -1).reverse(), startPos];
+                arrow.startPos = newStart;
+                arrow.offsetCoords = newOffsets;
+            }
+            const sx = arrow.startPos[0], sy = arrow.startPos[1];
+            const ox = arrow.offsetCoords[0][0], oy = arrow.offsetCoords[0][1];
+            if (sx === ox) {
+                arrow.direction = sy > oy ? ArrowDirection.UP : ArrowDirection.DOWN;
+            } else {
+                arrow.direction = sx > ox ? ArrowDirection.RIGHT : ArrowDirection.LEFT;
+            }
+        }
     }
 
     private _initMap() {
@@ -111,12 +144,12 @@ export class GameController extends Component {
         const g = this._pathGraphics;
         g.clear();
         g.lineWidth = GameConfig.pathWidth;
-        g.strokeColor = new Color().fromHEX('#ADADAD');
+        //g.strokeColor = new Color().fromHEX('#ADADAD');
         g.lineCap = Graphics.LineCap.ROUND;
         g.lineJoin = Graphics.LineJoin.ROUND;
 
         const gapRatio = 0.3;
-        let pts = PathManager.instance.pathPoints;
+        const pts = PathManager.instance.pathPoints;
 
         for (let i = 0; i < pts.length; i++) {
             const p1 = pts[i];
