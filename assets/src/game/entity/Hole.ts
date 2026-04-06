@@ -10,6 +10,7 @@ export class Hole extends Component {
     private expectColorType: EArrowColor = EArrowColor.RED;
     private _graphics: Graphics = null;
     private _occupied: boolean = false;
+    private _isRainbow: boolean = false;
 
     get occupied(): boolean {
         return this._occupied;
@@ -19,8 +20,13 @@ export class Hole extends Component {
         this._occupied = value;
     }
 
+    get isRainbow(): boolean {
+        return this._isRainbow;
+    }
+
     public init(colorType: EArrowColor) {
         this.expectColorType = colorType;
+        this._isRainbow = colorType === EArrowColor.RAINBOW;
         this._graphics = this.getComponent(Graphics);
         if (!this._graphics) {
             this._graphics = this.addComponent(Graphics);
@@ -29,8 +35,7 @@ export class Hole extends Component {
     }
 
     public checkMatch(arrowColor: EArrowColor): boolean {
-        //return true;
-        return !this.occupied && this.expectColorType === arrowColor;
+        return !this.occupied && (this._isRainbow || this.expectColorType === arrowColor);
     }
 
     private draw() {
@@ -40,13 +45,13 @@ export class Hole extends Component {
         g.clear();
         g.lineWidth = 4;
         g.strokeColor = new Color().fromHEX(this.expectColorType);
-        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.5);
+        g.circle(0, 0, GameConfig.holeSize * 1);
         g.stroke();
 
         let fillColor = new Color().fromHEX(this.expectColorType);
         fillColor.a = 80;
         g.fillColor = fillColor;
-        g.circle(0, 0, GameConfig.UNIT_SIZE * 0.45);
+        g.circle(0, 0, GameConfig.holeSize * 0.95);
         g.fill();
     }
 }

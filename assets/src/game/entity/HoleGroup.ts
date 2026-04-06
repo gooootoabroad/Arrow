@@ -1,10 +1,11 @@
 import { _decorator, Node, Vec3, tween, Vec2, Component, Graphics, Color } from 'cc';
+import { GameRuntime } from '../runtime/gameRuntime';
 import { Hole } from '../entity/Hole';
-import { EArrowColor } from '../type/arrow';
 import { GameConfig } from '../../global/GameConfig';
 import { HoleSpawnConfig } from '../config/LevelConfig';
-import { Prefab } from 'cc';
 import { Tween } from 'cc';
+import { ColorPoolManager } from '../manager/ColorPoolManager';
+import { v3 } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -15,47 +16,61 @@ export class HoleGroup extends Component {
     private holes: Hole[] = [];
     private firstHolePos: Vec3 = null;
     private endHolePos: Vec3 = null;
-    private _pendingConfigs: { gridPos: number[]; colorType: EArrowColor }[] = [];
+    private _totalHoles: number = 0;
+    private _spawnedCount: number = 0;
+    private _positions: number[][] = [];
     private _nextHoleIndex: number = 0;
     private _dashedCircleNode: Node = null;
 
     get activeHole(): Hole {
-        if (this.holes.length > 0) {
-            return this.holes[0];
-        }
-        return null;
+        return this.holes.length > 0 ? this.holes[0] : null;
+    }
+
+    isExhausted(): boolean {
+        return this._spawnedCount >= this._totalHoles && this.holes.length === 0;
     }
 
     init(config: HoleSpawnConfig) {
+        this._totalHoles = config.totalHoles;
+        this._spawnedCount = 0;
+        this._positions = config.positions;
         this._nextHoleIndex = 0;
+        this.holes = [];
 
-        for (let i = 0; i < config.positions.length; i++) {
-            if (i === 0) {
-                this.firstHolePos = new Vec3(config.positions[i][0] * GameConfig.UNIT_SIZE, config.positions[i][1] * GameConfig.UNIT_SIZE, 0);
-            }
-            if (i === MAX_VISIBLE_HOLES - 1) {
-                this.endHolePos = new Vec3(config.positions[i][0] * GameConfig.UNIT_SIZE, config.positions[i][1] * GameConfig.UNIT_SIZE, 0);
-            }
-
-            if (i < MAX_VISIBLE_HOLES) {
-                const holeNode = new Node(`Hole_${this._nextHoleIndex}`);
-                this._nextHoleIndex += 1;
-                this.node.addChild(holeNode);
-                let pos = config.positions[i];
-                holeNode.setPosition(new Vec3(pos[0] * GameConfig.UNIT_SIZE, pos[1] * GameConfig.UNIT_SIZE, 0));
-
-                const holeComp = holeNode.addComponent(Hole);
-                holeComp.init(config.colorTypes[i]);
-                this.holes.push(holeComp);
-            } else {
-                this._pendingConfigs.push({
-                    gridPos: config.positions[i],
-                    colorType: config.colorTypes[i],
-                });
-            }
+        for (let i = 0; i < Math.min(MAX_VISIBLE_HOLES, config.positions.length); i++) {
+            this._createHole(i);
         }
 
         this._createDashedCircle();
+    }
+
+    private _createHole(index: number) {
+        if (index >= this._positions.length) return;
+
+        const color = ColorPoolManager.getNextHoleColor();
+        const holeNode = new Node(`Hole_${this._nextHoleIndex}`);
+        this._nextHoleIndex += 1;
+        this.node.addChild(holeNode);
+
+        const pos = this._positions[index];
+        const worldX = pos[0] * GameConfig.UNIT_SIZE;
+        const worldY = pos[1] * GameConfig.UNIT_SIZE;
+
+        if (index === 0) {
+            this.firstHolePos = new Vec3(worldX, worldY, 0);
+        } else {
+            holeNode.scale = v3(0.7, 0.7, 1);
+        }
+        if (index === MAX_VISIBLE_HOLES - 1) {
+            this.endHolePos = new Vec3(worldX, worldY, 0);
+        }
+
+        holeNode.setPosition(new Vec3(worldX, worldY, 0));
+
+        const holeComp = holeNode.addComponent(Hole);
+        holeComp.init(color);
+        this.holes.push(holeComp);
+        this._spawnedCount++;
     }
 
     private _createDashedCircle() {
@@ -65,7 +80,7 @@ export class HoleGroup extends Component {
         this._dashedCircleNode.setPosition(this.firstHolePos);
 
         const g = this._dashedCircleNode.addComponent(Graphics);
-        this._drawDashedCircle(g, GameConfig.UNIT_SIZE * 0.7);
+        this._drawDashedCircle(g, GameConfig.holeSize * 1.1);
 
         tween(this._dashedCircleNode)
             .by(2, { angle: 360 })
@@ -104,7 +119,6 @@ export class HoleGroup extends Component {
     }
 
     onHoleEnter() {
-        //return;
         let currentHole = this.holes.shift();
         if (!currentHole) {
             this._destoryDashedCircle();
@@ -121,7 +135,7 @@ export class HoleGroup extends Component {
             }
 
             tween(this.holes[0].node)
-                .to(0.2, { position: this.firstHolePos })
+                .to(0.2, { position: this.firstHolePos, scale: v3(1, 1, 1) })
                 .start();
         }
 
@@ -133,9 +147,8 @@ export class HoleGroup extends Component {
     }
 
     private _spawnNextHole() {
-        if (this._pendingConfigs.length === 0) return;
+        if (this._spawnedCount >= this._totalHoles) return;
 
-        let pending = this._pendingConfigs.shift();
         const holeNode = new Node(`Hole_${this._nextHoleIndex}`);
         this.node.addChild(holeNode);
         this._nextHoleIndex += 1;
@@ -143,11 +156,13 @@ export class HoleGroup extends Component {
         holeNode.setScale(0, 0, 1);
 
         const holeComp = holeNode.addComponent(Hole);
-        holeComp.init(pending.colorType);
+        const color = ColorPoolManager.getNextHoleColor();
+        holeComp.init(color);
         this.holes.push(holeComp);
+        this._spawnedCount++;
 
         tween(holeNode)
-            .to(0.2, { scale: new Vec3(1, 1, 1) })
+            .to(0.2, { scale: new Vec3(0.7, 0.7, 1) })
             .start();
     }
 

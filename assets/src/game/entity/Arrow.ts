@@ -158,7 +158,7 @@ export class Arrow extends Component {
 
         let p1x = headX + dirX * GameConfig.arrowHeadSize;
         let p1y = headY + dirY * GameConfig.arrowHeadSize;
-        let hs = GameConfig.arrowLineWidth * 0.6;
+        let hs = GameConfig.arrowLineWidth * 1;
         let p2x = headX + perpX * (-hs);
         let p2y = headY + perpY * (-hs);
         let p3x = headX + perpX * hs;
@@ -337,15 +337,20 @@ export class Arrow extends Component {
     }
 
     private _enterHole(hole: Hole, group: HoleGroup) {
-        hole.occupied = true;
         this._isFirstEnterHole = true;
         this._state = ArrowState.ENTERING_HOLE;
         let holeWorldPos = hole.node.position;
         this._targetHolePos.x = holeWorldPos.x / GameConfig.UNIT_SIZE;
         this._targetHolePos.y = holeWorldPos.y / GameConfig.UNIT_SIZE;
         this._activeGroup = group;
+        this._isRainbowHole = hole.isRainbow;
+        if (!this._isRainbowHole) {
+            hole.occupied = true;
+        }
         PathManager.instance.freeAll(this._arrowId);
     }
+
+    private _isRainbowHole: boolean = false;
 
     private _moveIntoHole() {
         if (!this._isFirstEnterHole) {
@@ -356,7 +361,7 @@ export class Arrow extends Component {
         if (this._points.length <= 1) {
             this._state = ArrowState.FINISHED;
 
-            if (this._activeGroup) {
+            if (this._activeGroup && !this._isRainbowHole) {
                 this._activeGroup.onHoleEnter();
             }
 

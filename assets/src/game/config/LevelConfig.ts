@@ -12,7 +12,7 @@ export interface ArrowSpawnConfig {
 export interface HoleSpawnConfig {
     id: number;
     positions: number[][];
-    colorTypes: EArrowColor[];
+    totalHoles: number;
 }
 
 export interface PathConfig {
@@ -27,4 +27,6 @@ export interface LevelMapConfig {
     path: PathConfig;
     arrows: ArrowSpawnConfig[];
     holes: HoleSpawnConfig[];
+    colorPool: Record<string, number>;
+    enableRainbow: boolean;
 }
