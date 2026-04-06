@@ -4,6 +4,7 @@ import { CustomAdType, InterstitialAdType, VideoAdType } from "./type";
 import { GConfig } from "../config/config";
 import { GEventType, GEventTarget } from "../common/event";
 import { isKSPlatform } from "./core";
+import { Core } from "../global/Core";
 const { ccclass, property } = _decorator;
 
 interface shareImageInfo {
@@ -300,20 +301,20 @@ export class WeChatPlatform implements PlatformBase {
 
     // 短震动
     vibrateShort(): void {
-        // if (isEnabledVibrate()) {
-        //     wx.vibrateShort();
-        // }
+        if ((Core.userInfo.settingConfig.vibrateEnabled)) {
+            wx.vibrateShort();
+        }
     }
     // 长震动
     vibrateLong(): void {
-        // if (isEnabledVibrate()) {
-        //     const systemInfo = wx.getSystemInfoSync();
-        //     if (systemInfo.platform === 'ios') {
-        //         wx.vibrateShort();  // iOS 使用短震动
-        //     } else {
-        //         wx.vibrateLong();  // 安卓使用长震动
-        //     }
-        // }
+        if (Core.userInfo.settingConfig.vibrateEnabled) {
+            const systemInfo = wx.getSystemInfoSync();
+            if (systemInfo.platform === 'ios') {
+                wx.vibrateShort();  // iOS 使用短震动
+            } else {
+                wx.vibrateLong();  // 安卓使用长震动
+            }
+        }
     }
 
     // 设置好友排行榜

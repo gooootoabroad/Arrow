@@ -6,6 +6,12 @@ import { HoleSpawnConfig } from '../config/LevelConfig';
 import { Tween } from 'cc';
 import { ColorPoolManager } from '../manager/ColorPoolManager';
 import { v3 } from 'cc';
+import { ParticleSystem2D } from 'cc';
+import { SpriteFrame } from 'cc';
+import { Bundle } from '../../global/bundle';
+import { Sprite } from 'cc';
+import { LoadMgr } from '../../manager/LoadMgr';
+import { GPlatform } from '../../platform/platform';
 
 const { ccclass, property } = _decorator;
 
@@ -22,6 +28,11 @@ export class HoleGroup extends Component {
     private _nextHoleIndex: number = 0;
     private _dashedCircleNode: Node = null;
 
+    // 随机特效节点
+    private _ripplePool: Node[] = [];
+    private _rippleSpriteFrame: SpriteFrame = null;
+    private _rippleCount: number = 5;
+
     get activeHole(): Hole {
         return this.holes.length > 0 ? this.holes[0] : null;
     }
@@ -30,7 +41,7 @@ export class HoleGroup extends Component {
         return this._spawnedCount >= this._totalHoles && this.holes.length === 0;
     }
 
-    init(config: HoleSpawnConfig) {
+    async init(config: HoleSpawnConfig) {
         this._totalHoles = config.totalHoles;
         this._spawnedCount = 0;
         this._positions = config.positions;
@@ -42,6 +53,53 @@ export class HoleGroup extends Component {
         }
 
         this._createDashedCircle();
+
+        this._initRipplePool();
+    }
+
+    private async _initRipplePool() {
+        this._rippleSpriteFrame = await LoadMgr.loadSpriteFrame(Bundle.game, 'texture/white2');
+        //this._rippleSpriteFrame = await Bundle.get(Bundle.game, 'texture/white2', SpriteFrame);
+
+        for (let i = 0; i < this._rippleCount; i++) {
+            const rippleNode = new Node(`Ripple_${i}`);
+            rippleNode.active = false;
+            this.node.addChild(rippleNode);
+            rippleNode.setPosition(this.firstHolePos);
+
+            const sprite = rippleNode.addComponent(Sprite);
+            sprite.spriteFrame = this._rippleSpriteFrame;
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            rippleNode.uiTransfrom.setContentSize(GameConfig.holeSize, GameConfig.holeSize);
+            this._ripplePool.push(rippleNode);
+        }
+    }
+
+    private _playRipple(color: Color) {
+        const spreadDist = GameConfig.holeSize * 3;
+        for (let i = 0; i < this._rippleCount; i++) {
+            const rippleNode = this._ripplePool[i];
+            rippleNode.active = true;
+            Tween.stopAllByTarget(rippleNode);
+            rippleNode.setPosition(this.firstHolePos);
+            rippleNode.getComponent(Sprite).color = color;
+            rippleNode.opacity = 255;
+
+            const angle = (i / this._rippleCount) * Math.PI * 2;
+            const targetX = this.firstHolePos.x + Math.cos(angle) * spreadDist;
+            const targetY = this.firstHolePos.y + Math.sin(angle) * spreadDist;
+
+            tween(rippleNode)
+                .delay(i * 0.06)
+                .parallel(
+                    tween().to(0.5, { position: new Vec3(targetX, targetY, 0) }),
+                    tween().to(0.5, { opacity: 0 })
+                )
+                .call(() => {
+                    rippleNode.active = false;
+                })
+                .start();
+        }
     }
 
     private _createHole(index: number) {
@@ -137,9 +195,12 @@ export class HoleGroup extends Component {
             tween(this.holes[0].node)
                 .to(0.2, { position: this.firstHolePos, scale: v3(1, 1, 1) })
                 .start();
-        }
 
-        this._spawnNextHole();
+            // 如果本次头节点就是彩球了，就不生成了
+            if (!this.holes[0].isRainbow) {
+                this._spawnNextHole();
+            }
+        }
 
         if (this.holes.length === 0) {
             this._destoryDashedCircle();
@@ -179,5 +240,10 @@ export class HoleGroup extends Component {
             return activeHole;
         }
         return null;
+    }
+
+    startEntryHole(color: Color) {
+        GPlatform.vibrateLong();
+        this._playRipple(color);
     }
 }

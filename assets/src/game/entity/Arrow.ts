@@ -8,6 +8,10 @@ import { HoleGroup } from './HoleGroup';
 import { Hole } from './Hole';
 import { GridManager } from '../manager/GridManager';
 import { PathManager } from '../manager/PathManager';
+import { AudioMgr } from '../../manager/AudioMgr';
+import { Bundle } from '../../global/bundle';
+import { AudioClip } from 'cc';
+import { GPlatform } from '../../platform/platform';
 let { ccclass, property } = _decorator;
 
 @ccclass('Arrow')
@@ -84,7 +88,7 @@ export class Arrow extends Component {
         return GridManager.instance.checkAheadClear(headPos.x, headPos.y, dir.x, dir.y);
     }
 
-    public hitTest(worldPos: Vec2, threshold: number = GameConfig.arrowLineWidth): boolean {
+    public hitTest(worldPos: Vec2, threshold: number = GameConfig.arrowHeadSize): boolean {
         let U = GameConfig.UNIT_SIZE;
         for (let i = 0; i < this._points.length - 1; i++) {
             let ax = this._points[i].x * U;
@@ -233,6 +237,13 @@ export class Arrow extends Component {
         }
 
         if (this._checkCollision()) {
+            async () => {
+                // 播放碰撞声音
+                let clip = await Bundle.get(Bundle.audio, "collision", AudioClip);
+                AudioMgr.inst.playOneShot(clip);
+                GPlatform.vibrateShort();
+            }
+
             this._resetToOriginal();
         }
     }
@@ -343,6 +354,7 @@ export class Arrow extends Component {
         this._targetHolePos.x = holeWorldPos.x / GameConfig.UNIT_SIZE;
         this._targetHolePos.y = holeWorldPos.y / GameConfig.UNIT_SIZE;
         this._activeGroup = group;
+        this._activeGroup.startEntryHole(this.displayColor);
         this._isRainbowHole = hole.isRainbow;
         if (!this._isRainbowHole) {
             hole.occupied = true;
