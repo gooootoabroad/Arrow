@@ -5,6 +5,7 @@ export enum EArrowColor {
     YELLOW = '#FFEE44',
     PURPLE = '#AA44FF',
     ORANGE = '#FF9944',
+    RAINBOW = '#FFFFFF',
 }
 
 export enum ArrowDirection {

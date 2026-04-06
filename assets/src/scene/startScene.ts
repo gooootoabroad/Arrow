@@ -6,6 +6,7 @@ import { LoadMgr } from '../manager/LoadMgr';
 import { AudioMgr } from '../manager/AudioMgr';
 import { RunScene } from '../controller/RunScene';
 import { SceneName } from '../global/IGame';
+import { profiler } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('startScene')
@@ -140,6 +141,7 @@ export class startScene extends Component {
     }
 
     private _nextScene() {
+        profiler.showStats();
         RunScene.show(SceneName.Game, true);
     }
 }

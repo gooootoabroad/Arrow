@@ -1,6 +1,5 @@
 import { _decorator, Color, Component, Node, Vec3, Graphics, Vec2, Sprite, Prefab, EventTouch, UITransform, instantiate, resources, JsonAsset } from 'cc';
 import { LevelMapConfig, ArrowSpawnConfig } from '../config/LevelConfig';
-import { ArrowDirection } from '../type/arrow';
 import { Arrow } from '../entity/Arrow';
 import { HoleGroup } from '../entity/HoleGroup';
 import { GameConfig } from '../../global/GameConfig';
@@ -8,6 +7,7 @@ import { LoadMgr } from '../../manager/LoadMgr';
 import { Bundle } from '../../global/bundle';
 import { GameRuntime } from '../runtime/gameRuntime';
 import { PathManager } from '../manager/PathManager';
+import { ColorPoolManager } from '../manager/ColorPoolManager';
 
 const { ccclass, property } = _decorator;
 
@@ -37,11 +37,11 @@ export class GameController extends Component {
     private _mapRoot: Node = null;
 
     protected onLoad(): void {
-        this.node.on(Node.EventType.TOUCH_END, this.onClick, this);
+        this.node.on(Node.EventType.TOUCH_START, this.onClick, this);
     }
 
     protected onDestroy(): void {
-        this.node.off(Node.EventType.TOUCH_END, this.onClick, this);
+        this.node.off(Node.EventType.TOUCH_START, this.onClick, this);
     }
 
     protected start(): void {
@@ -72,6 +72,19 @@ export class GameController extends Component {
         const points = this._levelConfig.path.pathPoints.map(p => new Vec2(p[0], p[1]));
         PathManager.instance.reset();
         PathManager.instance.init(points);
+
+        // let info: Map<string, number> = new Map();
+        // for (const arrow of this._levelConfig.arrows) {
+        //     if (info.get(arrow.colorType)) {
+        //         let count = info.get(arrow.colorType);
+        //         info.set(arrow.colorType, count + 1);
+        //     } else {
+        //         info.set(arrow.colorType, 1);
+        //     }
+        // }
+
+        // console.log("arrow info ", info);
+        ColorPoolManager.initColorPool(this._levelConfig.colorPool || {}, this._levelConfig.enableRainbow ?? false);
     }
 
     // private _randomizeArrowDirections() {
