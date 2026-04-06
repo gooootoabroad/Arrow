@@ -8,6 +8,7 @@ import { Bundle } from '../../global/bundle';
 import { GameRuntime } from '../runtime/gameRuntime';
 import { PathManager } from '../manager/PathManager';
 import { ColorPoolManager } from '../manager/ColorPoolManager';
+import { GPlatform } from '../../platform/platform';
 
 const { ccclass, property } = _decorator;
 
@@ -244,6 +245,7 @@ export class GameController extends Component {
         let localPos = this.arrowRoot.getComponent(UITransform).convertToNodeSpaceAR(new Vec3(worldPos.x, worldPos.y, 0));
         for (const arrow of this._arrows) {
             if (arrow.hitTest(new Vec2(localPos.x, localPos.y))) {
+                GPlatform.vibrateShort();
                 arrow.startMoving();
                 break;
             }
