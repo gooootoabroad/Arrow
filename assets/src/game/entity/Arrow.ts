@@ -123,6 +123,11 @@ export class Arrow extends Component {
     public drawTo(g: Graphics) {
         if (this._points.length < 2) return;
 
+        // let g = this.node.getComponent(Graphics);
+        // g.lineWidth = GameConfig.arrowLineWidth;
+        // g.lineJoin = Graphics.LineJoin.ROUND;
+        // g.lineCap = Graphics.LineCap.ROUND;
+
         let U = GameConfig.UNIT_SIZE;
         let color = this.displayColor;
         let p0x = this._points[0].x * U;
@@ -168,6 +173,7 @@ export class Arrow extends Component {
     }
 
     public startMoving() {
+        console.log("start moving name distance ", this.node.name, this.direction);
         if (this._state !== ArrowState.IDLE) return;
 
         if (this.canMoveToPath()) {
