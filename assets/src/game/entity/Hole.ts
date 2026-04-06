@@ -29,6 +29,7 @@ export class Hole extends Component {
     }
 
     public checkMatch(arrowColor: EArrowColor): boolean {
+        //return true;
         return !this.occupied && this.expectColorType === arrowColor;
     }
 

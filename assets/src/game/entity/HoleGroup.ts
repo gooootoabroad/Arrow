@@ -104,6 +104,7 @@ export class HoleGroup extends Component {
     }
 
     onHoleEnter() {
+        //return;
         let currentHole = this.holes.shift();
         if (!currentHole) {
             this._destoryDashedCircle();

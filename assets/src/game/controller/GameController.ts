@@ -55,14 +55,14 @@ export class GameController extends Component {
                 return;
             }
             this._levelConfig = asset.json as LevelMapConfig;
-            this._randomizeArrowDirections();
+            //this._randomizeArrowDirections();
             this.initRuntime();
-            this._initMap();
+            //this._initMap();
             this._initPath();
             this._initHolesFromConfig();
             this._initArrowGraphics();
             this._initArrowsFromConfig();
-
+            //this._arrowTick();
             this.schedule(this._arrowTick, 0.05);
         });
     }
@@ -74,25 +74,25 @@ export class GameController extends Component {
         PathManager.instance.init(points);
     }
 
-    private _randomizeArrowDirections() {
-        if (!this._levelConfig.arrows) return;
-        for (const arrow of this._levelConfig.arrows) {
-            if (Math.random() < 0.5) {
-                const { startPos, offsetCoords } = arrow;
-                const newStart = offsetCoords[offsetCoords.length - 1];
-                const newOffsets = [...offsetCoords.slice(0, -1).reverse(), startPos];
-                arrow.startPos = newStart;
-                arrow.offsetCoords = newOffsets;
-            }
-            const sx = arrow.startPos[0], sy = arrow.startPos[1];
-            const ox = arrow.offsetCoords[0][0], oy = arrow.offsetCoords[0][1];
-            if (sx === ox) {
-                arrow.direction = sy > oy ? ArrowDirection.UP : ArrowDirection.DOWN;
-            } else {
-                arrow.direction = sx > ox ? ArrowDirection.RIGHT : ArrowDirection.LEFT;
-            }
-        }
-    }
+    // private _randomizeArrowDirections() {
+    //     if (!this._levelConfig.arrows) return;
+    //     for (const arrow of this._levelConfig.arrows) {
+    //         if (Math.random() < 0.5) {
+    //             const { startPos, offsetCoords } = arrow;
+    //             const newStart = offsetCoords[offsetCoords.length - 1];
+    //             const newOffsets = [...offsetCoords.slice(0, -1).reverse(), startPos];
+    //             arrow.startPos = newStart;
+    //             arrow.offsetCoords = newOffsets;
+    //         }
+    //         const sx = arrow.startPos[0], sy = arrow.startPos[1];
+    //         const ox = arrow.offsetCoords[0][0], oy = arrow.offsetCoords[0][1];
+    //         if (sx === ox) {
+    //             arrow.direction = sy > oy ? ArrowDirection.UP : ArrowDirection.DOWN;
+    //         } else {
+    //             arrow.direction = sx > ox ? ArrowDirection.RIGHT : ArrowDirection.LEFT;
+    //         }
+    //     }
+    // }
 
     private _initMap() {
         this._mapRoot = new Node('MapRoot');
@@ -144,7 +144,7 @@ export class GameController extends Component {
         const g = this._pathGraphics;
         g.clear();
         g.lineWidth = GameConfig.pathWidth;
-        //g.strokeColor = new Color().fromHEX('#ADADAD');
+        g.strokeColor = new Color().fromHEX('#ADADAD');
         g.lineCap = Graphics.LineCap.ROUND;
         g.lineJoin = Graphics.LineJoin.ROUND;
 
