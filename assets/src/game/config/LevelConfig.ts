@@ -29,4 +29,5 @@ export interface LevelMapConfig {
     holes: HoleSpawnConfig[];
     colorPool: Record<string, number>;
     enableRainbow: boolean;
+    maxMoves: number;
 }

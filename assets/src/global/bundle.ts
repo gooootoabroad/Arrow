@@ -7,6 +7,7 @@ export class Bundle {
     static game: AssetManager.Bundle;
     static mainCanvas: AssetManager.Bundle;
     static runScene: AssetManager.Bundle;
+    static animals: AssetManager.Bundle;
 
     static async get<T extends Asset>(bundle: AssetManager.Bundle, path: string, type: new (...args: any[]) => T): Promise<T> {
         const asset = bundle.get(path, type);
@@ -27,4 +28,5 @@ export enum BundleName {
     Audio = "audio",
     Font = "font",
     RunScene = "runScene",
+    Animals = "animals",
 }

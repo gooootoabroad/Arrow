@@ -85,6 +85,10 @@ export class PathManager {
         return this._occupiedIndices.size >= this._pathPoints.length;
     }
 
+    isPathNearlyFull(): boolean {
+        return this.freeCount < 2;
+    }
+
     reset() {
         this._pathPoints = [];
         this._occupiedIndices.clear();

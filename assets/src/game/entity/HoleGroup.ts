@@ -58,7 +58,7 @@ export class HoleGroup extends Component {
     }
 
     private async _initRipplePool() {
-        this._rippleSpriteFrame = await LoadMgr.loadSpriteFrame(Bundle.game, 'texture/white2');
+        this._rippleSpriteFrame = await LoadMgr.loadSpriteFrame(Bundle.game, 'texture/ui/white2');
         //this._rippleSpriteFrame = await Bundle.get(Bundle.game, 'texture/white2', SpriteFrame);
 
         for (let i = 0; i < this._rippleCount; i++) {

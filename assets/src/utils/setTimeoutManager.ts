@@ -3,7 +3,7 @@ import { AsyncRWLockManager } from './lock';
 import { awaitManager } from './awaitManager';
 const { ccclass, property } = _decorator;
 
-type TimeoutID = number;
+type TimeoutID = NodeJS.Timeout;
 const LockKey = "setTimeoutManager";
 
 @ccclass('setTimeoutManager')

@@ -372,6 +372,7 @@ export class Arrow extends Component {
 
         if (this._points.length <= 1) {
             this._state = ArrowState.FINISHED;
+            GameRuntime.finishedArrow += 1;
 
             if (this._activeGroup && !this._isRainbowHole) {
                 this._activeGroup.onHoleEnter();
