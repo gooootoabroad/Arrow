@@ -775,7 +775,13 @@ function buildLevelConfig() {
         holes,
         colorPool: state.colorPool || {},
         enableRainbow: state.enableRainbow || false,
+        maxMoves: buildMaxMoves(arrows.length),
     };
+}
+
+function buildMaxMoves(arrowCount) {
+    const tolerance = Math.max(5, Math.ceil(arrowCount * 0.15));
+    return arrowCount + tolerance;
 }
 
 function exportJSON() {

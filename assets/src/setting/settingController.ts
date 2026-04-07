@@ -1,0 +1,123 @@
+import { _decorator, Color, Component, instantiate, Label, Node, Sprite } from 'cc';
+import { TopController } from '../components/TopController';
+import { Core } from '../global/Core';
+import { getCurrentVersion, versionToString } from '../common/version';
+import { Prefab } from 'cc';
+import { Bundle } from '../global/bundle';
+import { GEventTarget, GEventType } from '../common/event';
+const { ccclass, property } = _decorator;
+
+@ccclass('settingController')
+export class settingController extends TopController {
+    @property(Node)
+    private gMusicNode: Node = null;
+    @property(Node)
+    private gSoundEffectNode: Node = null;
+    @property(Node)
+    private gVibrateNode: Node = null;
+    @property(Label)
+    private versionLabel: Label = null;
+
+
+    private gIsDealingClicked: boolean = false;
+
+    // 启用的按钮颜色
+    private gEnableButtonColor0: string = "#61A720";
+    private gEnableButtonColor1: string = "#77C52E";
+    // 禁用的按钮颜色
+    private gDisableButtonColor0: string = "#B64B41";
+    private gDisableButtonColor1: string = "#F06458";
+
+    protected static async _getPrefab(): Promise<Prefab> {
+        return Bundle.get(Bundle.game, "prefabs/SettingCanvas", Prefab);
+    }
+
+    protected _open() {
+        // 设置按钮颜色以及提示
+        let settingConfig = Core.userInfo.settingConfig;
+        this.initMusic(settingConfig.musicEnabled);
+        this.initSoundEffect(settingConfig.soundEffectEnabled);
+        this.initVibrate(settingConfig.vibrateEnabled);
+        this.versionLabel.string = `v${versionToString(getCurrentVersion())}`;
+    }
+
+    onCloseClicked() {
+        if (this.gIsDealingClicked) return;
+        this.node.destroy();
+    }
+
+    private initMusic(on?: boolean) {
+        let enableText = "音乐：开启";
+        let disableText = "音乐：关闭";
+        let isEnable = this.dealCommonSettingUI(this.gMusicNode, enableText, disableText, on);
+        if (on == undefined) {
+            Core.userInfo.settingConfig.musicEnabled = isEnable;
+            GEventTarget.emit(GEventType.GEventGameMusicChange);
+        }
+    }
+    // on参数为主动获取到设置后初始化按钮颜色使用
+    onMusicClicked(_: Event, on?: boolean) {
+        this.initMusic(on);
+    }
+
+    private initSoundEffect(on?: boolean) {
+        let enableText = "音效：开启";
+        let disableText = "音效：关闭";
+        let isEnable = this.dealCommonSettingUI(this.gSoundEffectNode, enableText, disableText, on);
+        if (on == undefined) {
+            Core.userInfo.settingConfig.soundEffectEnabled = isEnable;
+        }
+    }
+
+    onSoundEffectClicked(_: Event, on?: boolean) {
+        this.initSoundEffect(on);
+    }
+
+    private initVibrate(on?: boolean) {
+        let enableText = "震动：开启";
+        let disableText = "震动：关闭";
+        let isEnable = this.dealCommonSettingUI(this.gVibrateNode, enableText, disableText, on);
+        if (on == undefined) {
+            Core.userInfo.settingConfig.vibrateEnabled = isEnable;
+        }
+    }
+
+    onVibrateClicked(_: Event, on?: boolean) {
+        this.initVibrate(on);
+    }
+
+    private dealCommonSettingUI(buttonNode: Node, enableText: string, disableText: string, on?: boolean): boolean {
+        let isEnable: boolean;
+        let buttonColor0: string;
+        let buttonColor1: string;
+        const buttonLabel = buttonNode.getComponentInChildren(Label);
+
+        let buttonText: string = buttonLabel.string;
+        if (on != undefined) {
+            isEnable = on;
+        } else {
+            // 取反
+            if (buttonText == enableText) {
+                isEnable = false;
+            } else {
+                isEnable = true;
+            }
+        }
+
+        if (isEnable) {
+            buttonColor0 = this.gEnableButtonColor0;
+            buttonColor1 = this.gEnableButtonColor1;
+            buttonText = enableText;
+        } else {
+            buttonColor0 = this.gDisableButtonColor0;
+            buttonColor1 = this.gDisableButtonColor1;
+            buttonText = disableText;
+        }
+
+        buttonNode.getComponent(Sprite).color = new Color().fromHEX(buttonColor0);
+        buttonNode.getChildByName("B0").getComponent(Sprite).color = new Color().fromHEX(buttonColor1);
+        buttonLabel.string = buttonText;
+        return isEnable;
+    }
+}
+

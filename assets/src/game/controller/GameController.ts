@@ -9,6 +9,11 @@ import { GameRuntime } from '../runtime/gameRuntime';
 import { PathManager } from '../manager/PathManager';
 import { ColorPoolManager } from '../manager/ColorPoolManager';
 import { GPlatform } from '../../platform/platform';
+import { getLevelInfo, getLevelJsonFileName } from '../levels/levelInfo';
+import { Core } from '../../global/Core';
+import { GameMenuMgr } from '../manager/GameMenuMgr';
+import { LevelManager } from '../manager/LevelManager';
+import { BlockInputEvents } from 'cc';
 
 const { ccclass, property } = _decorator;
 
@@ -29,6 +34,12 @@ export class GameController extends Component {
     @property(Prefab)
     private holeGroupPrefab: Prefab = null;
 
+    @property(Prefab)
+    private topViewPrefab: Prefab = null;
+
+    @property(Node)
+    private inputBlockNode: Node = null;
+
     private levelJsonPath: string = 'levels/level_2';
 
     private _levelConfig: LevelMapConfig = null;
@@ -37,7 +48,17 @@ export class GameController extends Component {
     private _arrowGraphics: Graphics = null;
     private _mapRoot: Node = null;
 
+    private _topNode: Node = null;
+    private _topNodeScript: LevelManager = null;
+
     protected onLoad(): void {
+        if (this.pathVisual) {
+            this._pathGraphics = this.pathVisual.getComponent(Graphics);
+            if (!this._pathGraphics) {
+                this._pathGraphics = this.pathVisual.addComponent(Graphics);
+            }
+        }
+
         this.node.on(Node.EventType.TOUCH_START, this.onClick, this);
     }
 
@@ -45,8 +66,37 @@ export class GameController extends Component {
         this.node.off(Node.EventType.TOUCH_START, this.onClick, this);
     }
 
-    protected start(): void {
-        this.loadLevel(this.levelJsonPath);
+    public startGame() {
+        console.log("core level ", Core.userInfo.level);
+        let levelJsonFile = `levels/${getLevelJsonFileName(2)}`;
+        this.loadLevel(levelJsonFile);
+    }
+
+    public clear() {
+        // 清空路径图案
+        this._pathGraphics.clear();
+        // 清空所有洞组
+        const holeChildrens = this.holeRoot.children.slice();
+        holeChildrens.forEach(child => {
+            child.removeFromParent(); // 立即从父节点断开
+            child.destroy();          // 标记销毁
+        });
+        // 清空所有箭头
+        const arrowChildrens = this.arrowRoot.children.slice();
+        arrowChildrens.forEach(child => {
+            child.removeFromParent(); // 立即从父节点断开
+            child.destroy();          // 标记销毁
+        });
+
+        this._topNode?.destroy();
+        this._topNodeScript = null;
+    }
+
+    public revive() {
+        GameRuntime.pause = false;
+        this._topNodeScript.init(10);
+        this.schedule(this._arrowTick, 0.05);
+        this.inputBlockNode.getComponent(BlockInputEvents).enabled = false;
     }
 
     private loadLevel(path: string) {
@@ -55,25 +105,36 @@ export class GameController extends Component {
                 console.error(`Failed to load level: ${path}`, err);
                 return;
             }
+            this.inputBlockNode.getComponent(BlockInputEvents).enabled = true;
             this._levelConfig = asset.json as LevelMapConfig;
-            //this._randomizeArrowDirections();
             this.initRuntime();
-            //this._initMap();
             this._initPath();
+            //this._randomizeArrowDirections();
+            //this._initMap();
             this._initHolesFromConfig();
             this._initArrowGraphics();
             this._initArrowsFromConfig();
+            GameMenuMgr.init();
             //this._arrowTick();
             this.schedule(this._arrowTick, 0.05);
+            this.generateTopView();
+            this.inputBlockNode.getComponent(BlockInputEvents).enabled = false;
         });
+    }
+
+    private generateTopView() {
+        this._topNode = instantiate(this.topViewPrefab);
+        this.node.addChild(this._topNode);
+        this._topNodeScript = this._topNode.getComponent(LevelManager);
+        this._topNodeScript.init(this._levelConfig.maxMoves);
     }
 
     private initRuntime() {
         GameRuntime.holeGroups = [];
-        const points = this._levelConfig.path.pathPoints.map(p => new Vec2(p[0], p[1]));
-        PathManager.instance.reset();
-        PathManager.instance.init(points);
-
+        GameRuntime.totalArrow = this._levelConfig.arrows.length;
+        GameRuntime.finishedArrow = 0;
+        GameRuntime.levelInfo = getLevelInfo(this._levelConfig.levelId);
+        GameRuntime.pause = false;
         // let info: Map<string, number> = new Map();
         // for (const arrow of this._levelConfig.arrows) {
         //     if (info.get(arrow.colorType)) {
@@ -142,12 +203,9 @@ export class GameController extends Component {
     }
 
     private _initPath(): void {
-        if (this.pathVisual) {
-            this._pathGraphics = this.pathVisual.getComponent(Graphics);
-            if (!this._pathGraphics) {
-                this._pathGraphics = this.pathVisual.addComponent(Graphics);
-            }
-        }
+        const points = this._levelConfig.path.pathPoints.map(p => new Vec2(p[0], p[1]));
+        PathManager.instance.reset();
+        PathManager.instance.init(points);
 
         this._drawPath();
     }
@@ -230,6 +288,12 @@ export class GameController extends Component {
     }
 
     private _arrowTick() {
+        if (GameRuntime.pause) {
+            this.unschedule(this._arrowTick);
+            this.inputBlockNode.getComponent(BlockInputEvents).enabled = true;
+            return;
+        }
+
         for (let arrow of this._arrows) {
             arrow.tick();
         }
@@ -237,6 +301,18 @@ export class GameController extends Component {
         this._arrowGraphics.clear();
         for (let arrow of this._arrows) {
             arrow.drawTo(this._arrowGraphics);
+        }
+
+        if (GameRuntime.finishedArrow == GameRuntime.totalArrow) {
+            GameMenuMgr.showSuccessMenu();
+            this.inputBlockNode.getComponent(BlockInputEvents).enabled = true;
+            this.unschedule(this._arrowTick);
+        }
+
+        if (PathManager.instance.isPathNearlyFull()) {
+            GameMenuMgr.showFailedMenu();
+            this.inputBlockNode.getComponent(BlockInputEvents).enabled = true;
+            this.unschedule(this._arrowTick);
         }
     }
 
@@ -246,6 +322,7 @@ export class GameController extends Component {
         for (const arrow of this._arrows) {
             if (arrow.hitTest(new Vec2(localPos.x, localPos.y))) {
                 GPlatform.vibrateShort();
+                this._topNodeScript.costOneStep();
                 arrow.startMoving();
                 break;
             }

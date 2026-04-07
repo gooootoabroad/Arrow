@@ -4,15 +4,7 @@ export const GroupID = "groupAll";
 // 视频广告类型
 export enum VideoAdType {
     Common = "common",
-    Energy = "energy",
-    Box = "box",
-    GameItems = "gameItems",
-    MoreMoney = "moreMoney",
-    Gift = "gift",
-    PfRevive = "pfRevive",
-    ShortGame = "shortGame",
-    LongSkewerGameItem = "longSkewerGameItem",
-    MoreGameAD = "moreGameAD",
+    Revive = "revive",
 }
 
 // 插屏广告
