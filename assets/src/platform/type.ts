@@ -5,6 +5,7 @@ export const GroupID = "groupAll";
 export enum VideoAdType {
     Common = "common",
     Revive = "revive",
+    Energy = "energy",
 }
 
 // 插屏广告

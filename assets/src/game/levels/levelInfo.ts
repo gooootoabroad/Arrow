@@ -15,7 +15,7 @@ const levelInfos: LevelInfo[] = [
     {
         id: 2,
         name: "猫头鹰",
-        image: "xx"
+        image: "owl"
     }
 ]
 

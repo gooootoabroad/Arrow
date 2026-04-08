@@ -15,16 +15,18 @@ export class GameMenuMgr {
         this.showingMenu = false;
     }
 
-    static showFailedMenu() {
+    static showFailedMenu(forbiddenRevive: boolean = false) {
         if (this.showingMenu) return;
         this.showingMenu = true;
         GameRuntime.pause = true;
-        if (this._canRevive) {
+        if (!forbiddenRevive && this._canRevive) {
             GameReviveMenu.show();
             this._canRevive = false;
         } else {
             GameFailedMenu.show();
         }
+
+        this.showingMenu = false;
     }
 
     static showSuccessMenu() {
@@ -36,5 +38,6 @@ export class GameMenuMgr {
         }
         Core.userInfo.level += 1;
         GameSuccessMenu.show();
+        this.showingMenu = false;
     }
 }

@@ -37,7 +37,6 @@ export class GameSuccessMenu extends TopController {
         let audio = await Bundle.get(Bundle.audio, 'success', AudioClip);
         AudioMgr.inst.playOneShot(audio, 0.1);
         // 更新图片
-        let iconIndex = getRandomInt(0, 3);
         LoadMgr.loadSprite(Bundle.animals, GameRuntime.levelInfo.image, this.uiSprite);
         // 更新字
         this.iconLabel.string = this.getRandomText();

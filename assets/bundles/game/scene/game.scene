@@ -222,7 +222,7 @@
       "__id__": 2
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 6
@@ -910,7 +910,6 @@
     "__type__": "4f20dk50mNLQbhcpQvgIvaD",
     "_name": "",
     "_objFlags": 0,
-    "__editorExtras__": {},
     "node": {
       "__id__": 9
     },
@@ -1014,7 +1013,6 @@
     "__type__": "dcc9dKI9SpAyrc16UZTFgaT",
     "_name": "",
     "_objFlags": 0,
-    "__editorExtras__": {},
     "node": {
       "__id__": 2
     },
