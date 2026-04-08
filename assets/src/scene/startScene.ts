@@ -7,6 +7,7 @@ import { AudioMgr } from '../manager/AudioMgr';
 import { RunScene } from '../controller/RunScene';
 import { SceneName } from '../global/IGame';
 import { profiler } from 'cc';
+import { resources } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('startScene')
@@ -69,10 +70,14 @@ export class startScene extends Component {
         await LoadMgr.loadDir(Bundle.audio, '/', AudioClip);
         this._updateProgress(0.6);
 
+        Bundle.animals = await LoadMgr.loadBundle(BundleName.Animals);
         Bundle.game = await LoadMgr.loadBundle(BundleName.Game);
         this._updateProgress(0.7);
 
         Bundle.mainCanvas = await LoadMgr.loadBundle(BundleName.MainCanvas);
+
+        Bundle.setting = await LoadMgr.loadBundle(BundleName.Setting);
+        Bundle.resource = resources;
 
         // Bundle.monster = await LoadMgr.loadBundle(BundleName.Monster);
         // this._targetProgress = 0.8;

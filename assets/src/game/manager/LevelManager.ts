@@ -65,7 +65,7 @@ export class LevelManager extends Component {
     onSettingClick() {
         if (this.isDealing) return;
         this.isDealing = true;
-        settingController.show();
+        settingController.showSetting(true);
 
         this.isDealing = false;
     }

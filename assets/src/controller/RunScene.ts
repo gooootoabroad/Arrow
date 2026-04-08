@@ -16,8 +16,8 @@ export class RunScene extends Component {
     private _fast = false;
 
     // 过渡动画，后续加上支持prefab加回调
-    static show(sceneName: SceneName, fast = false) {
-        let prefab = Bundle.runScene.get('prefabs/Loading', Prefab);
+    static async show(sceneName: SceneName, fast = false) {
+        let prefab = await Bundle.get(Bundle.runScene, 'prefabs/Loading', Prefab);
         let node = instantiate(prefab);
         node.parent = UIMgr.instance.persistParent;
         node.setSiblingIndex(10000);

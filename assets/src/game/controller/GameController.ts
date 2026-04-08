@@ -14,6 +14,9 @@ import { Core } from '../../global/Core';
 import { GameMenuMgr } from '../manager/GameMenuMgr';
 import { LevelManager } from '../manager/LevelManager';
 import { BlockInputEvents } from 'cc';
+import { AudioClip } from 'cc';
+import { AudioMgr } from '../../manager/AudioMgr';
+import { GEventTarget, GEventType } from '../../common/event';
 
 const { ccclass, property } = _decorator;
 
@@ -51,7 +54,9 @@ export class GameController extends Component {
     private _topNode: Node = null;
     private _topNodeScript: LevelManager = null;
 
-    protected onLoad(): void {
+    private _clickArrowClip: AudioClip = null;
+
+    protected async onLoad() {
         if (this.pathVisual) {
             this._pathGraphics = this.pathVisual.getComponent(Graphics);
             if (!this._pathGraphics) {
@@ -59,11 +64,19 @@ export class GameController extends Component {
             }
         }
 
+        this._arrowGraphics = this.arrowRoot.getComponent(Graphics);
+        if (!this._arrowGraphics) {
+            this._arrowGraphics = this.arrowRoot.addComponent(Graphics);
+        }
+
+        this._clickArrowClip = await Bundle.get(Bundle.audio, "clickArrow", AudioClip);
         this.node.on(Node.EventType.TOUCH_START, this.onClick, this);
+        GEventTarget.on(GEventType.GEventEnableScheduleDraw, this.enableScheduleDraw, this);
     }
 
     protected onDestroy(): void {
         this.node.off(Node.EventType.TOUCH_START, this.onClick, this);
+        GEventTarget.off(GEventType.GEventEnableScheduleDraw, this.enableScheduleDraw, this);
     }
 
     public startGame() {
@@ -75,6 +88,7 @@ export class GameController extends Component {
     public clear() {
         // 清空路径图案
         this._pathGraphics.clear();
+
         // 清空所有洞组
         const holeChildrens = this.holeRoot.children.slice();
         holeChildrens.forEach(child => {
@@ -88,6 +102,9 @@ export class GameController extends Component {
             child.destroy();          // 标记销毁
         });
 
+        // 清空箭头图案
+        this._arrowGraphics.clear();
+
         this._topNode?.destroy();
         this._topNodeScript = null;
     }
@@ -97,6 +114,16 @@ export class GameController extends Component {
         this._topNodeScript.init(10);
         this.schedule(this._arrowTick, 0.05);
         this.inputBlockNode.getComponent(BlockInputEvents).enabled = false;
+    }
+
+    // 给设置用的
+    private enableScheduleDraw(b: boolean) {
+        if (b) {
+            this.unschedule(this._arrowTick);
+            this.schedule(this._arrowTick, 0.05);
+        } else {
+            this.unschedule(this._arrowTick);
+        }
     }
 
     private loadLevel(path: string) {
@@ -242,17 +269,13 @@ export class GameController extends Component {
     }
 
     private _initArrowGraphics() {
-        this._arrowGraphics = this.arrowRoot.getComponent(Graphics);
-        if (!this._arrowGraphics) {
-            this._arrowGraphics = this.arrowRoot.addComponent(Graphics);
-        }
-
         this._arrowGraphics.lineWidth = GameConfig.arrowLineWidth;
         this._arrowGraphics.lineJoin = Graphics.LineJoin.ROUND;
         this._arrowGraphics.lineCap = Graphics.LineCap.ROUND;
     }
 
     private _initHolesFromConfig(): void {
+        GameRuntime.holeGroups = [];
         if (!this.holeRoot || !this._levelConfig.holes) return;
 
         for (const config of this._levelConfig.holes) {
@@ -266,6 +289,7 @@ export class GameController extends Component {
     }
 
     private _initArrowsFromConfig(): void {
+        this._arrows = [];
         if (!this.arrowRoot || !this._levelConfig.arrows) return;
 
         for (const config of this._levelConfig.arrows) {
@@ -310,7 +334,8 @@ export class GameController extends Component {
         }
 
         if (PathManager.instance.isPathNearlyFull()) {
-            GameMenuMgr.showFailedMenu();
+            // 路径满了，就不能复活了
+            GameMenuMgr.showFailedMenu(true);
             this.inputBlockNode.getComponent(BlockInputEvents).enabled = true;
             this.unschedule(this._arrowTick);
         }
@@ -322,6 +347,7 @@ export class GameController extends Component {
         for (const arrow of this._arrows) {
             if (arrow.hitTest(new Vec2(localPos.x, localPos.y))) {
                 GPlatform.vibrateShort();
+                AudioMgr.inst.playOneShot(this._clickArrowClip);
                 this._topNodeScript.costOneStep();
                 arrow.startMoving();
                 break;

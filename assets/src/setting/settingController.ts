@@ -5,6 +5,9 @@ import { getCurrentVersion, versionToString } from '../common/version';
 import { Prefab } from 'cc';
 import { Bundle } from '../global/bundle';
 import { GEventTarget, GEventType } from '../common/event';
+import { numberToString } from '../utils/string';
+import { EnergyAD } from '../ad/EnergyAD';
+import { GameStatus } from '../game/type/types';
 const { ccclass, property } = _decorator;
 
 @ccclass('settingController')
@@ -28,11 +31,23 @@ export class settingController extends TopController {
     private gDisableButtonColor0: string = "#B64B41";
     private gDisableButtonColor1: string = "#F06458";
 
+    private static isGameSetting: boolean = false;
+    static async showSetting(isGameSetting: boolean) {
+        this.isGameSetting = isGameSetting;
+        settingController.show();
+    }
+
     protected static async _getPrefab(): Promise<Prefab> {
-        return Bundle.get(Bundle.game, "prefabs/SettingCanvas", Prefab);
+        console.log("is game setting ", this.isGameSetting);
+        let name = "prefabs/SettingCanvas";
+        if (this.isGameSetting) {
+            name = "prefabs/GameSetting";
+        }
+        return Bundle.get(Bundle.setting, name, Prefab);
     }
 
     protected _open() {
+        GEventTarget.emit(GEventType.GEventEnableScheduleDraw, false);
         // 设置按钮颜色以及提示
         let settingConfig = Core.userInfo.settingConfig;
         this.initMusic(settingConfig.musicEnabled);
@@ -43,6 +58,7 @@ export class settingController extends TopController {
 
     onCloseClicked() {
         if (this.gIsDealingClicked) return;
+        GEventTarget.emit(GEventType.GEventEnableScheduleDraw, true);
         this.node.destroy();
     }
 
@@ -118,6 +134,41 @@ export class settingController extends TopController {
         buttonNode.getChildByName("B0").getComponent(Sprite).color = new Color().fromHEX(buttonColor1);
         buttonLabel.string = buttonText;
         return isEnable;
+    }
+
+    onRestartClick() {
+        const node = this.node.getChildByName("EnergyTip");
+        node.active = true;
+        node.getChildByName("EnergyCount").getComponent(Label).string = numberToString(Core.userInfo.energy);
+    }
+
+    onConfirmRestartClick() {
+        if (this.gIsDealingClicked) return;
+        this.gIsDealingClicked = true;
+
+        // 判断体力够不够
+        if (Core.userInfo.energy <= 0) {
+            EnergyAD.show();
+            this.onEnergyTipCloseClick();
+            this.gIsDealingClicked = false;
+            return;
+        }
+
+        Core.userInfo.energy -= 1;
+        GEventTarget.emit(GEventType.GEventSetGameStatus, GameStatus.Start);
+        this.node.destroy();
+    }
+
+    onEnergyTipCloseClick() {
+        this.node.getChildByName("EnergyTip").active = false;
+    }
+
+    onReturnMainClick() {
+        if (this.gIsDealingClicked) return;
+        this.gIsDealingClicked = true;
+
+        GEventTarget.emit(GEventType.GEventSetGameStatus, GameStatus.ReturnMain);
+        this.node.destroy();
     }
 }
 

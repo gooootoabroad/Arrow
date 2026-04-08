@@ -4,6 +4,9 @@ export class UserInfo {
     @SaveProp.decorator(1)
     level: number;
 
+    @SaveProp.decorator(5)
+    energy: number;
+
     @SaveProp.decorator({
         musicEnabled: true,
         soundEffectEnabled: true,

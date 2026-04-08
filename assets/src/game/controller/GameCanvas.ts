@@ -7,6 +7,9 @@ import { AudioMgr } from '../../manager/AudioMgr';
 import { ResourceMgr } from '../../manager/ResourceMgr';
 import { GameStatus } from '../type/types';
 import { Core } from '../../global/Core';
+import { GameRuntime } from '../runtime/gameRuntime';
+import { RunScene } from '../../controller/RunScene';
+import { SceneName } from '../../global/IGame';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameCanvas')
@@ -27,9 +30,9 @@ export class GameCanvas extends Component {
     }
 
     async start() {
-        //let clip = await Bundle.get(Bundle.audio, 'gameMusic', AudioClip);
-        //AudioMgr.background.play(clip);
-        // this.dealGameMusice();
+        let clip = await Bundle.get(Bundle.audio, 'gameMusic', AudioClip);
+        AudioMgr.background.play(clip);
+        this.dealGameMusice();
         ResourceMgr.initAsyncResource();
         this.doStartGame();
     }
@@ -39,8 +42,13 @@ export class GameCanvas extends Component {
             case GameStatus.Start: {
                 return this.doStartGame();
             }
-            case GameStatus.Revive:
+            case GameStatus.Revive: {
                 return this.doRevie();
+            }
+            case GameStatus.ReturnMain: {
+                return this.returnMainCanvas();
+            }
+
         }
     }
 
@@ -48,6 +56,7 @@ export class GameCanvas extends Component {
         await ResourceMgr.waitCancelAsyncResource();
         this.gameScript.clear();
         setTimeout(() => {
+            ResourceMgr.initAsyncResource();
             this.gameStart();
         }, 500);
     }
@@ -66,6 +75,14 @@ export class GameCanvas extends Component {
         } else {
             AudioMgr.background.pause();
         }
+    }
+
+    private async returnMainCanvas() {
+        if (this.isDealing) return;
+        this.isDealing = true;
+        await ResourceMgr.waitCancelAsyncResource();
+        this.gameScript.clear();
+        RunScene.show(SceneName.Main);
     }
 }
 

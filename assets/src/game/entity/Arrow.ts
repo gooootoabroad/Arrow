@@ -145,35 +145,37 @@ export class Arrow extends Component {
         }
         g.stroke();
 
-        let headX = p0x;
-        let headY = p0y;
-        let nextX = this._points[1].x * U;
-        let nextY = this._points[1].y * U;
+        if (this._state !== ArrowState.ENTERING_HOLE) {
+            let headX = p0x;
+            let headY = p0y;
+            let nextX = this._points[1].x * U;
+            let nextY = this._points[1].y * U;
 
-        let dirX = headX - nextX;
-        let dirY = headY - nextY;
-        let dirLen = Math.sqrt(dirX * dirX + dirY * dirY);
-        if (dirLen === 0) return;
-        dirX /= dirLen;
-        dirY /= dirLen;
+            let dirX = headX - nextX;
+            let dirY = headY - nextY;
+            let dirLen = Math.sqrt(dirX * dirX + dirY * dirY);
+            if (dirLen === 0) return;
+            dirX /= dirLen;
+            dirY /= dirLen;
 
-        let perpX = -dirY;
-        let perpY = dirX;
+            let perpX = -dirY;
+            let perpY = dirX;
 
-        let p1x = headX + dirX * GameConfig.arrowHeadSize;
-        let p1y = headY + dirY * GameConfig.arrowHeadSize;
-        let hs = GameConfig.arrowLineWidth * 1;
-        let p2x = headX + perpX * (-hs);
-        let p2y = headY + perpY * (-hs);
-        let p3x = headX + perpX * hs;
-        let p3y = headY + perpY * hs;
+            let p1x = headX + dirX * GameConfig.arrowHeadSize;
+            let p1y = headY + dirY * GameConfig.arrowHeadSize;
+            let hs = GameConfig.arrowLineWidth * 1;
+            let p2x = headX + perpX * (-hs);
+            let p2y = headY + perpY * (-hs);
+            let p3x = headX + perpX * hs;
+            let p3y = headY + perpY * hs;
 
-        g.fillColor = color;
-        g.moveTo(p1x, p1y);
-        g.lineTo(p2x, p2y);
-        g.lineTo(p3x, p3y);
-        g.close();
-        g.fill();
+            g.fillColor = color;
+            g.moveTo(p1x, p1y);
+            g.lineTo(p2x, p2y);
+            g.lineTo(p3x, p3y);
+            g.close();
+            g.fill();
+        }
     }
 
     public startMoving() {
@@ -237,13 +239,13 @@ export class Arrow extends Component {
         }
 
         if (this._checkCollision()) {
-            async () => {
-                // 播放碰撞声音
-                let clip = await Bundle.get(Bundle.audio, "collision", AudioClip);
+            // 播放碰撞声音
+            let clip = Bundle.get2(Bundle.audio, "collision", AudioClip);
+            if (clip != null) {
                 AudioMgr.inst.playOneShot(clip);
-                GPlatform.vibrateShort();
             }
 
+            GPlatform.vibrateShort();
             this._resetToOriginal();
         }
     }
@@ -348,6 +350,10 @@ export class Arrow extends Component {
     }
 
     private _enterHole(hole: Hole, group: HoleGroup) {
+        let clip = Bundle.get2(Bundle.audio, "enterHole", AudioClip);
+        if (clip != null) {
+            AudioMgr.inst.playOneShot(clip);
+        }
         this._isFirstEnterHole = true;
         this._state = ArrowState.ENTERING_HOLE;
         let holeWorldPos = hole.node.position;

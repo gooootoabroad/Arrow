@@ -8,4 +8,5 @@ export enum GEventType {
     GEventGameMusicChange,
 
     GEventSetGameStatus,
+    GEventEnableScheduleDraw,
 }
