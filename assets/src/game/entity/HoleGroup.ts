@@ -12,6 +12,8 @@ import { Bundle } from '../../global/bundle';
 import { Sprite } from 'cc';
 import { LoadMgr } from '../../manager/LoadMgr';
 import { GPlatform } from '../../platform/platform';
+import { AudioClip } from 'cc';
+import { AudioMgr } from '../../manager/AudioMgr';
 
 const { ccclass, property } = _decorator;
 
@@ -32,6 +34,13 @@ export class HoleGroup extends Component {
     private _ripplePool: Node[] = [];
     private _rippleSpriteFrame: SpriteFrame = null;
     private _rippleCount: number = 5;
+
+    // 进洞音效
+    private _enterHoleClip: AudioClip = null;
+
+    protected async onLoad() {
+        this._enterHoleClip = await Bundle.get(Bundle.audio, "enterHole", AudioClip);
+    }
 
     get activeHole(): Hole {
         return this.holes.length > 0 ? this.holes[0] : null;
@@ -243,6 +252,7 @@ export class HoleGroup extends Component {
     }
 
     startEntryHole(color: Color) {
+        AudioMgr.inst.playOneShot(this._enterHoleClip);
         GPlatform.vibrateLong();
         this._playRipple(color);
     }

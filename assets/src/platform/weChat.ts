@@ -444,7 +444,7 @@ export class WeChatPlatform implements PlatformBase {
         const pageManager = wx.createPageManager();
 
         pageManager.load({
-            openlink: '-SSEykJvFV3pORt5kTNpS1MIhZuSChs0H4zYnUFKW493d7b0c2sgiUByt7JyVbSF67CJIQebQvxe85Q2gIR7OkmawEf_7Hcw7F5UaxGQzfTnBQq4hLd408czmqt4D2wgo3BI7F-Jht1jZtuBkux-p_4NmMekelS10f2wi84-D6MtbYd7nTnm4dWRMC9XbKnFghfBcMtnFmCV1gXmZFdkxVwEUgq6cTDDDNSN44m87wixcW1eEV3zaKlGQlyeeIoGVggXhUJ1CJ1HqyPQMPb8gqJhi9GIIuB3XzqNHccivXPbNfNAahrmMXl2cEg-ciNl4R3DflAIn5rPar7V_sMcFw', // 由不同渠道获得的OPENLINK值
+            openlink: '-SSEykJvFV3pORt5kTNpS_xOWXKBaoTit6NR4SKCJZfthfS9_ZBgxwhDo449o1LK2deB6adw46ZoPfwsbWex8_MONcu-vijOk7WV1annTagwAN05L6whH3kVfZG4UjOdSRBrgH0zep-dwMOIAZSOH5mY5RU1hX5y6Uhor6UpPKyeWz6dwhEQUgPml1Nji72iNMvCbyDZXiVF7xlBRPQmPw2-kxQlsDKMi5s0lZlkNTJXp_XoVThcCu0n52T0VhJQSUAURXRea3OAPTsrxMCJ_APW4XfHbRYs4SuqvyBrG1pIFSpmXP-pDvwerMaMzlOaFTCHfO0vbvu6r14M2AocIA'
         }).then((res) => {
             // 加载成功，res 可能携带不同活动、功能返回的特殊回包信息（具体请参阅渠道说明）
             console.log(res);

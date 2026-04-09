@@ -8,6 +8,8 @@ import { RunScene } from '../controller/RunScene';
 import { SceneName } from '../global/IGame';
 import { profiler } from 'cc';
 import { resources } from 'cc';
+import { Core } from '../global/Core';
+import { EnergyManager } from '../manager/EnergyManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('startScene')
@@ -61,7 +63,6 @@ export class startScene extends Component {
     }
 
     private async _loadBundle() {
-        Bundle.font = await LoadMgr.loadBundle(BundleName.Font);
         Bundle.runScene = await LoadMgr.loadBundle(BundleName.RunScene);
         await LoadMgr.loadDir(Bundle.runScene, 'prefabs', Prefab);
         this._updateProgress(0.5);
@@ -75,6 +76,7 @@ export class startScene extends Component {
         this._updateProgress(0.7);
 
         Bundle.mainCanvas = await LoadMgr.loadBundle(BundleName.MainCanvas);
+        this._updateProgress(0.7);
 
         Bundle.setting = await LoadMgr.loadBundle(BundleName.Setting);
         Bundle.resource = resources;
@@ -84,7 +86,12 @@ export class startScene extends Component {
 
         // await LoadMgr.loadDir(Bundle.game, 'prefab', Prefab);
         this._updateProgress(0.9);
-        await LoadMgr.loadScene(SceneName.Game);
+        if (Core.userInfo.energy <= 0) {
+            await LoadMgr.loadScene(SceneName.Main);
+        } else {
+            await LoadMgr.loadScene(SceneName.Game);
+        }
+
     }
 
     private async loadRes() {
@@ -92,6 +99,8 @@ export class startScene extends Component {
         await LoadMgr.loadDir2(Bundle.game);
         await LoadMgr.loadDir2(Bundle.runScene);
         await LoadMgr.loadDir2(Bundle.mainCanvas);
+        await LoadMgr.loadDir2(Bundle.animals);
+        await LoadMgr.loadDir2(Bundle.setting);
     }
 
     private async _initPlatform() {
@@ -147,7 +156,12 @@ export class startScene extends Component {
 
     private _nextScene() {
         profiler.showStats();
-        RunScene.show(SceneName.Game, true);
+        if (Core.userInfo.energy <= 0) {
+            RunScene.show(SceneName.Main, true)
+        } else {
+            EnergyManager.consumeEnergy();
+            RunScene.show(SceneName.Game, true);
+        }
     }
 }
 

@@ -10,7 +10,7 @@ const levelInfos: LevelInfo[] = [
     {
         id: 1,
         name: "猫头鹰",
-        image: "xx"
+        image: "owl"
     },
     {
         id: 2,
@@ -18,6 +18,10 @@ const levelInfos: LevelInfo[] = [
         image: "owl"
     }
 ]
+
+export function getAllLevelInfos(): LevelInfo[] {
+    return levelInfos;
+}
 
 export function getLevelInfo(id: number): LevelInfo {
     if (id > levelInfos.length) return null;

@@ -350,10 +350,6 @@ export class Arrow extends Component {
     }
 
     private _enterHole(hole: Hole, group: HoleGroup) {
-        let clip = Bundle.get2(Bundle.audio, "enterHole", AudioClip);
-        if (clip != null) {
-            AudioMgr.inst.playOneShot(clip);
-        }
         this._isFirstEnterHole = true;
         this._state = ArrowState.ENTERING_HOLE;
         let holeWorldPos = hole.node.position;
