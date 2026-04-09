@@ -12,4 +12,9 @@ export class GameConfig {
     static readonly pathWidth: number = 5;
     // 洞半径多大
     static readonly holeSize = GameConfig.UNIT_SIZE * 1;
+
+    // 体力最大限制
+    static readonly maxEnergy: number = 5;
+    // 体力恢复间隔（秒）
+    static readonly energyRecoverInterval: number = 5 * 60;
 }

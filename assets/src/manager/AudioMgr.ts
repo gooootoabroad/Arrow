@@ -1,4 +1,5 @@
 import { AudioClip, AudioSource, Node, director } from "cc";
+import { Core } from "../global/Core";
 
 /**
  * 音频控制器
@@ -47,6 +48,7 @@ export class AudioMgr {
     }
 
     playOneShot(sound: AudioClip, delay = 0.2) {
+        if (!Core.userInfo.settingConfig.soundEffectEnabled) return;
         let now = Date.now();
         const time = this._audioMap.get(sound) ?? 0;
         if ((now - time) >= (delay * 1000)) {

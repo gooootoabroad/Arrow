@@ -7,6 +7,9 @@ export class UserInfo {
     @SaveProp.decorator(5)
     energy: number;
 
+    @SaveProp.decorator(0)
+    energyRecoverTime: number;
+
     @SaveProp.decorator({
         musicEnabled: true,
         soundEffectEnabled: true,

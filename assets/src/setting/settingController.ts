@@ -8,6 +8,8 @@ import { GEventTarget, GEventType } from '../common/event';
 import { numberToString } from '../utils/string';
 import { EnergyAD } from '../ad/EnergyAD';
 import { GameStatus } from '../game/type/types';
+import { GameConfig } from '../global/GameConfig';
+import { EnergyManager } from '../manager/EnergyManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('settingController')
@@ -38,7 +40,6 @@ export class settingController extends TopController {
     }
 
     protected static async _getPrefab(): Promise<Prefab> {
-        console.log("is game setting ", this.isGameSetting);
         let name = "prefabs/SettingCanvas";
         if (this.isGameSetting) {
             name = "prefabs/GameSetting";
@@ -146,15 +147,14 @@ export class settingController extends TopController {
         if (this.gIsDealingClicked) return;
         this.gIsDealingClicked = true;
 
-        // 判断体力够不够
-        if (Core.userInfo.energy <= 0) {
+        // 消耗体力
+        if (!EnergyManager.consumeEnergy()) {
             EnergyAD.show();
             this.onEnergyTipCloseClick();
             this.gIsDealingClicked = false;
             return;
         }
 
-        Core.userInfo.energy -= 1;
         GEventTarget.emit(GEventType.GEventSetGameStatus, GameStatus.Start);
         this.node.destroy();
     }

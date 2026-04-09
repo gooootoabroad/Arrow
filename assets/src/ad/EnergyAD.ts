@@ -7,6 +7,7 @@ import { AudioMgr } from '../manager/AudioMgr';
 import { Core } from '../global/Core';
 import { GPlatform } from '../platform/platform';
 import { VideoAdType } from '../platform/type';
+import { EnergyManager } from '../manager/EnergyManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('EnergyAD')
@@ -29,7 +30,7 @@ export class EnergyAD extends TopController {
         let isSuccessed = false;
         let onSuccess = () => {
             isSuccessed = true;
-            Core.userInfo.energy += 3;
+            EnergyManager.addEnergy(3);
         }
 
         let onFinally = () => {
