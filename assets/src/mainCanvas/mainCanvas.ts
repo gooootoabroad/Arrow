@@ -30,6 +30,13 @@ export class mainCanvas extends Component {
     @property(Prefab)
     private themePrefab: Prefab = null;
 
+    @property(Label)
+    private energyLabel: Label = null;
+    @property(Label)
+    private countdownLabel: Label = null;
+    @property(Node)
+    private recoverNode: Node = null;
+
     private themeNode: Node = null;
 
     private isDealing: boolean = false;
@@ -40,6 +47,7 @@ export class mainCanvas extends Component {
 
     protected onDestroy(): void {
         GEventTarget.off(GEventType.GEventGameMusicChange, this.dealGameMusice, this);
+        EnergyManager.instance.unbindUI();
     }
 
     async start() {
@@ -48,6 +56,7 @@ export class mainCanvas extends Component {
         AudioMgr.background.play(clip);
         this.dealGameMusice();
         this.initMapInfo();
+        EnergyManager.instance.bindUI(this.energyLabel, this.countdownLabel, this.recoverNode);
     }
 
     initMapInfo() {

@@ -14,6 +14,8 @@ import { LoadMgr } from '../../manager/LoadMgr';
 import { GPlatform } from '../../platform/platform';
 import { AudioClip } from 'cc';
 import { AudioMgr } from '../../manager/AudioMgr';
+import { LevelManager } from '../manager/LevelManager';
+import { GEventTarget, GEventType } from '../../common/event';
 
 const { ccclass, property } = _decorator;
 
@@ -253,7 +255,7 @@ export class HoleGroup extends Component {
 
     startEntryHole(color: Color) {
         AudioMgr.inst.playOneShot(this._enterHoleClip);
-        GPlatform.vibrateLong();
+        GEventTarget.emit(GEventType.GEventAddOneStep);
         this._playRipple(color);
     }
 }

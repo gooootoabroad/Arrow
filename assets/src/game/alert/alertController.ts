@@ -24,7 +24,7 @@ export class alertController extends TopController {
         setTimeout(() => {
             id.stop();
             this.node.destroy();
-        }, 5000);
+        }, 3000);
     }
 }
 
