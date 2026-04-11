@@ -111,7 +111,7 @@ export class GameController extends Component {
 
     public revive() {
         GameRuntime.pause = false;
-        this._topNodeScript.init(10);
+        this._topNodeScript.init(6);
         this.schedule(this._arrowTick, 0.05);
         this.inputBlockNode.getComponent(BlockInputEvents).enabled = false;
     }

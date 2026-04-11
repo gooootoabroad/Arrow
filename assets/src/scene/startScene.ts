@@ -48,17 +48,16 @@ export class startScene extends Component {
     }
 
     private async _load() {
-        // 下载游戏资源
         this._updateProgress(0.1, "正在加载游戏资源");
         await this._loadBundle();
         await this.loadRes();
 
-        // 初始化平台以及钩子
         this._updateProgress(0.95, "正在初始化数据");
         await this._initPlatform();
-        // 初始化钩子
         await this._privateFunc();
         this._updateProgress(1, "加载完成，正在进入游戏");
+
+        EnergyManager.instance.init();
         this._nextScene();
     }
 
@@ -155,7 +154,7 @@ export class startScene extends Component {
     }
 
     private _nextScene() {
-        profiler.showStats();
+        //profiler.showStats();
         if (Core.userInfo.energy <= 0) {
             RunScene.show(SceneName.Main, true)
         } else {

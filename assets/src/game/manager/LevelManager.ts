@@ -7,6 +7,7 @@ import { Color } from 'cc';
 import { GameRuntime } from '../runtime/gameRuntime';
 import { settingController } from '../../setting/settingController';
 import { GameMenuMgr } from './GameMenuMgr';
+import { GEventTarget, GEventType } from '../../common/event';
 const { ccclass, property } = _decorator;
 
 @ccclass('LevelManager')
@@ -29,6 +30,16 @@ export class LevelManager extends Component {
     private alertColor: Color = new Color().fromHEX("#FF0000");
 
     private isDealing: boolean = false;
+    private lastAlertTime: number = 0;
+    private static readonly ALERT_COOLDOWN: number = 10000;
+
+    protected onLoad(): void {
+        GEventTarget.on(GEventType.GEventAddOneStep, this.addOneStep, this);
+    }
+
+    protected onDestroy(): void {
+        GEventTarget.off(GEventType.GEventAddOneStep, this.addOneStep, this);
+    }
 
     init(step: number) {
         this.step = step;
@@ -48,13 +59,21 @@ export class LevelManager extends Component {
         this.updateStpeUI();
     }
 
+    addOneStep() {
+        this.step += 1;
+        this.updateStpeUI();
+    }
+
     updateStpeUI() {
         let color = this.normalColor;
-        if (this.step == 5) {
-            // 触发警告
-            alertController.show();
+        if (this.step == 1) {
+            const now = Date.now();
+            if (now - this.lastAlertTime >= LevelManager.ALERT_COOLDOWN) {
+                alertController.show();
+                this.lastAlertTime = now;
+            }
         }
-        if (this.step <= 5) {
+        if (this.step <= 1) {
             color = this.alertColor;
         }
 

@@ -9,4 +9,5 @@ export enum GEventType {
 
     GEventSetGameStatus,
     GEventEnableScheduleDraw,
+    GEventAddOneStep,
 }
